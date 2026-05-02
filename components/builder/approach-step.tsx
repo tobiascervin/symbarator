@@ -29,31 +29,32 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
   function selectApproach(id: string) {
     update((d) => {
       d.approachId = id;
-      // Reset spell picks when approach changes (Mystic).
-      d.spellPicks = cls?.spellcasting
+      // Reset spell picks when approach changes; only spellcasting approaches need them.
+      const next = cls?.approaches.find((a) => a.id === id);
+      d.spellPicks = next?.spellcasting
         ? { cantrips: [], spellsKnown: [] }
         : undefined;
     });
   }
 
   function toggleCantrip(spellId: string) {
-    if (!cls?.spellcasting) return;
+    if (!selected?.spellcasting) return;
     update((d) => {
       const picks = d.spellPicks ?? { cantrips: [], spellsKnown: [] };
       const set = new Set(picks.cantrips);
       if (set.has(spellId)) set.delete(spellId);
-      else if (set.size < (cls.spellcasting?.cantripsKnownAt1 ?? 0)) set.add(spellId);
+      else if (set.size < (selected.spellcasting?.cantripsKnownAt1 ?? 0)) set.add(spellId);
       d.spellPicks = { ...picks, cantrips: Array.from(set) };
     });
   }
 
   function toggleSpell(spellId: string) {
-    if (!cls?.spellcasting) return;
+    if (!selected?.spellcasting) return;
     update((d) => {
       const picks = d.spellPicks ?? { cantrips: [], spellsKnown: [] };
       const set = new Set(picks.spellsKnown);
       if (set.has(spellId)) set.delete(spellId);
-      else if (set.size < (cls.spellcasting?.spellsKnownAt1 ?? 0)) set.add(spellId);
+      else if (set.size < (selected.spellcasting?.spellsKnownAt1 ?? 0)) set.add(spellId);
       d.spellPicks = { ...picks, spellsKnown: Array.from(set) };
     });
   }
@@ -116,11 +117,11 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
               ))}
             </ul>
 
-            {cls.spellcasting && tradition && (
+            {selected.spellcasting && tradition && (
               <>
                 <div>
                   <p className="font-display tracking-wide text-base mb-2">
-                    Cantrips — pick {cls.spellcasting.cantripsKnownAt1} (
+                    Cantrips — pick {selected.spellcasting.cantripsKnownAt1} (
                     {(draft.spellPicks?.cantrips.length ?? 0)} chosen)
                   </p>
                   <div className="grid sm:grid-cols-2 gap-2">
@@ -146,7 +147,7 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
 
                 <div>
                   <p className="font-display tracking-wide text-base mb-2">
-                    1st-level spells — pick {cls.spellcasting.spellsKnownAt1} (
+                    1st-level spells — pick {selected.spellcasting.spellsKnownAt1} (
                     {(draft.spellPicks?.spellsKnown.length ?? 0)} chosen)
                   </p>
                   <div className="grid sm:grid-cols-2 gap-2">

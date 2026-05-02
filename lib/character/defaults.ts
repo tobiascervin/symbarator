@@ -33,6 +33,8 @@ export function emptyCharacter(id: string): Character {
     spellPicks: undefined,
     corruption: { permanent: 0, temporary: 0 },
     notes: "",
+    maxHp: 0,
+    feats: [],
   };
 }
 

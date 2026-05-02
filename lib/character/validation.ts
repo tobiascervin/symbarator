@@ -83,16 +83,16 @@ export function validateStep(step: Step, c: Character): string | null {
       if (!c.approachId) return "Choose an approach.";
       const cls = CLASS_BY_ID[c.classId];
       if (!cls) return "Class not found.";
-      if (!cls.approaches.find((a) => a.id === c.approachId))
-        return "Approach does not match your class.";
-      // Mystic-specific: spell picks
-      if (cls.spellcasting) {
+      const approach = cls.approaches.find((a) => a.id === c.approachId);
+      if (!approach) return "Approach does not match your class.";
+      // Spellcasting approaches (Mystic, Templar, Witch Hunter): spell picks
+      if (approach.spellcasting) {
         const cantripCount = c.spellPicks?.cantrips.length ?? 0;
         const spellCount = c.spellPicks?.spellsKnown.length ?? 0;
-        if (cantripCount !== cls.spellcasting.cantripsKnownAt1)
-          return `Choose exactly ${cls.spellcasting.cantripsKnownAt1} cantrips.`;
-        if (spellCount !== cls.spellcasting.spellsKnownAt1)
-          return `Choose exactly ${cls.spellcasting.spellsKnownAt1} 1st-level spell.`;
+        if (cantripCount !== approach.spellcasting.cantripsKnownAt1)
+          return `Choose exactly ${approach.spellcasting.cantripsKnownAt1} cantrips.`;
+        if (spellCount !== approach.spellcasting.spellsKnownAt1)
+          return `Choose exactly ${approach.spellcasting.spellsKnownAt1} 1st-level spell.`;
       }
       // Fighting style at L1 if class offers it
       if (cls.fightingStyleAt1 && !c.fightingStyle) {

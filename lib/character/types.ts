@@ -14,6 +14,18 @@ export type Ability =
   | "wis"
   | "cha";
 
+// Character level. Symbaroum 5E caps progression at 20.
+export type CharacterLevel =
+  | 1 | 2 | 3 | 4 | 5
+  | 6 | 7 | 8 | 9 | 10
+  | 11 | 12 | 13 | 14 | 15
+  | 16 | 17 | 18 | 19 | 20;
+
+export const MAX_CHARACTER_LEVEL = 20 as const;
+
+// Symbaroum places ASI/feat slots at these character levels (extra L10 vs base 5E).
+export const ASI_FEAT_LEVELS: ReadonlyArray<CharacterLevel> = [4, 8, 10, 12, 16, 19] as const;
+
 export const ABILITY_ORDER: readonly Ability[] = [
   "str",
   "dex",
@@ -142,6 +154,56 @@ export interface BackgroundDef {
   };
 }
 
+/**
+ * A single per-level entry on a class's level table. Index 0 corresponds to
+ * level 1; tables MUST be exactly 20 rows long.
+ */
+export interface ClassLevelEntry {
+  level: CharacterLevel;
+  profBonus: 2 | 3 | 4 | 5 | 6;
+  /** Generic feature grants — surfaced on the sheet, no choices required. */
+  features: ReadonlyArray<{ name: string; description: string }>;
+  /** Choice prompts the level-up flow surfaces this level. */
+  choices?: ReadonlyArray<LevelChoice>;
+}
+
+/** Approach-specific row, parallel to ClassLevelEntry. */
+export interface ApproachLevelEntry {
+  level: CharacterLevel;
+  features: ReadonlyArray<{ name: string; description: string }>;
+  choices?: ReadonlyArray<LevelChoice>;
+}
+
+/**
+ * One level-up question. Each kind has a dedicated UI step and a validator
+ * arm; adding a new variant without updating both sites MUST fail to compile.
+ */
+export type LevelChoice =
+  // For Changeling characters the ASI/feat step also offers Change Self in this same slot.
+  | { kind: "asi-or-feat" }
+  | { kind: "fighting-style"; from: FightingStyleId[] }
+  | { kind: "spells-learned"; cantrips?: number; spells?: number; canSwap?: boolean };
+
+/**
+ * One row of a spellcasting progression table. Index 0 is level 1.
+ * `spellSlots[i]` is the count of (i+1)th-level slots, indices 0..8 (1st..9th).
+ */
+export interface SpellSlotRow {
+  cantripsKnown: number;
+  spellsKnown: number;
+  /** Slots per spell level, 1st through 9th. Length 9. */
+  spellSlots: ReadonlyArray<number>;
+}
+
+export interface ApproachSpellcasting {
+  abilityHint: Ability;
+  cantripsKnownAt1: number;
+  spellsKnownAt1: number;
+  spellSlotsAt1: number;
+  /** Length 20; row 0 corresponds to character level 1. */
+  progression: ReadonlyArray<SpellSlotRow>;
+}
+
 export interface ClassDef {
   id: string;
   name: string;
@@ -156,18 +218,18 @@ export interface ClassDef {
   };
   startingEquipment: string[]; // each entry is one "(a) X or (b) Y" choice line
   shadowFormula: "standard" | "mystic";
-  // Spellcasting metadata for Mystic.
-  spellcasting?: {
-    abilityHint: Ability; // changes per Approach; default shown
-    cantripsKnownAt1: number;
-    spellsKnownAt1: number;
-    spellSlotsAt1: number;
-  };
   // Level-1 features common to the class (Approach features added on top).
   level1Features: ReadonlyArray<{ name: string; description: string }>;
   // Whether class offers a Fighting Style at L1.
   fightingStyleAt1?: FightingStyleId[];
   approaches: ApproachDef[];
+  /**
+   * Full L1–20 progression. Length 20. Index 0 corresponds to level 1.
+   * The L1 row's `features` MAY be empty; class-level L1 features still live
+   * on `level1Features` for the wizard. Sheet-side feature aggregation reads
+   * BOTH `level1Features` and `levelTable[0..level-1].features`.
+   */
+  levelTable: ReadonlyArray<ClassLevelEntry>;
 }
 
 export interface ApproachDef {
@@ -176,8 +238,19 @@ export interface ApproachDef {
   name: string;
   description: string;
   level1Features: ReadonlyArray<{ name: string; description: string }>;
-  // For Mystic approaches: which spell tradition.
+  // For Mystic approaches (and any other tradition-bound caster): which spell tradition.
   tradition?: SpellTradition;
+  /**
+   * Full L1–20 progression. Length 20. Index 0 corresponds to level 1.
+   * Same conventions as `ClassDef.levelTable`.
+   */
+  levelTable: ReadonlyArray<ApproachLevelEntry>;
+  /**
+   * Spellcasting metadata, including the L1–20 progression. Defined only for
+   * spellcasting approaches (every Mystic approach, plus Warrior/Templar and
+   * Hunter/Witch Hunter). Other approaches MUST leave this undefined.
+   */
+  spellcasting?: ApproachSpellcasting;
 }
 
 export type SpellTradition =
@@ -205,10 +278,12 @@ export interface BurdenDef {
   description: string;
 }
 
+export type SpellLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
 export interface SpellDef {
   id: string;
   name: string;
-  level: 0 | 1; // MVP only encodes cantrips and 1st-level
+  level: SpellLevel;
   school: string;
   traditions: SpellTradition[];
   ritual?: boolean;
@@ -233,7 +308,15 @@ export interface Character {
   id: string;
   createdAt: string; // ISO
   updatedAt: string; // ISO
-  level: 1; // expand later
+  level: CharacterLevel;
+  /**
+   * Persisted maximum HP. Set at character creation (origin hit die + Con mod)
+   * and incremented per level-up. Persisted because rolled HP gains are
+   * non-deterministic — we don't recompute from level alone.
+   */
+  maxHp: number;
+  /** Feat ids from `data/feats.ts`, accumulated via level-up ASI-or-feat picks. */
+  feats: string[];
   identity: CharacterIdentity;
   originId: string;
   /** Free-floating ability boosts the player allocated from origin's ASI. */
@@ -271,6 +354,6 @@ export interface CharacterSummary {
   name: string;
   originId: string;
   classId: string;
-  level: 1;
+  level: CharacterLevel;
   updatedAt: string;
 }

@@ -154,22 +154,47 @@ export function CharacterSheet({ character: c }: { character: Character }) {
                   See class entry.
                 </Feature>
               )}
+              {/* Per-level class features earned past L1. */}
+              {cls?.levelTable.slice(0, c.level).flatMap((row, i) =>
+                row.features.map((f) => (
+                  <Feature key={`class-l${i + 1}-${f.name}`} title={`${cls.name} L${i + 1}: ${f.name}`}>
+                    {f.description}
+                  </Feature>
+                )),
+              )}
+              {/* Per-level approach features earned past L1. */}
+              {approach?.levelTable.slice(0, c.level).flatMap((row, i) =>
+                row.features.map((f) => (
+                  <Feature key={`approach-l${i + 1}-${f.name}`} title={`${approach.name} L${i + 1}: ${f.name}`}>
+                    {f.description}
+                  </Feature>
+                )),
+              )}
+              {c.feats.length > 0 && (
+                <Feature title={`Feats: ${c.feats.length}`}>
+                  {c.feats.join(", ")}
+                </Feature>
+              )}
             </div>
           </Parchment>
 
-          {/* Spells (Mystic) */}
+          {/* Spells (any spellcasting approach) */}
           {spell && c.spellPicks && (
             <Parchment>
               <SectionHeader>Spellcraft</SectionHeader>
               <p className="text-sm text-[#3a322a] mb-2">
                 Tradition: <span className="font-display">{spell.tradition ?? "—"}</span> ·
-                Slots (1st): {spell.slotsLevel1}
+                Slots:{" "}
+                {spell.spellSlots
+                  .map((n, i) => (n > 0 ? `L${i + 1}: ${n}` : null))
+                  .filter(Boolean)
+                  .join(" · ") || "—"}
               </p>
               {c.spellPicks.cantrips.length > 0 && (
                 <SpellList title="Cantrips" ids={c.spellPicks.cantrips} />
               )}
               {c.spellPicks.spellsKnown.length > 0 && (
-                <SpellList title="1st-Level Spells" ids={c.spellPicks.spellsKnown} />
+                <SpellList title="Spells Known" ids={c.spellPicks.spellsKnown} />
               )}
             </Parchment>
           )}

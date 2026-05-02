@@ -42,3 +42,6 @@ next-env.d.ts
 
 # reference material — local only (large or copyrighted)
 /content/docs
+
+# JetBrains IDE local settings
+.idea/

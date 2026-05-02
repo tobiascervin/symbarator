@@ -4,7 +4,9 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 import { LocalCharacterStore } from "@/lib/storage/local";
 import type { Character } from "@/lib/character/types";
+import { MAX_CHARACTER_LEVEL } from "@/lib/character/types";
 import { CharacterSheet } from "@/components/sheet/character-sheet";
+import { LevelUpDialog } from "@/components/level-up/level-up-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -16,6 +18,7 @@ export default function CharacterPage({
   const { id } = use(params);
   const [character, setCharacter] = useState<Character | null>(null);
   const [loading, setLoading] = useState(true);
+  const [levelUpOpen, setLevelUpOpen] = useState(false);
 
   useEffect(() => {
     void LocalCharacterStore.load(id).then((c) => {
@@ -52,9 +55,21 @@ export default function CharacterPage({
               <Button variant="outline" size="sm" onClick={handleExport}>
                 Export JSON
               </Button>
+              <Button
+                size="sm"
+                onClick={() => setLevelUpOpen(true)}
+                disabled={character.level >= MAX_CHARACTER_LEVEL}
+                title={
+                  character.level >= MAX_CHARACTER_LEVEL
+                    ? "Already at maximum level"
+                    : `Advance to level ${character.level + 1}`
+                }
+              >
+                Level Up
+              </Button>
               <Link
                 href={`/builder/origin?id=${character.id}`}
-                className={buttonVariants({ size: "sm" })}
+                className={buttonVariants({ size: "sm", variant: "ghost" })}
               >
                 Edit
               </Link>
@@ -79,6 +94,18 @@ export default function CharacterPage({
 
         {character && <CharacterSheet character={character} />}
       </div>
+      {character && (
+        <LevelUpDialog
+          key={`${character.id}-${character.level}`}
+          open={levelUpOpen}
+          onOpenChange={setLevelUpOpen}
+          character={character}
+          onApplied={async (updated) => {
+            await LocalCharacterStore.save(updated);
+            setCharacter(updated);
+          }}
+        />
+      )}
     </main>
   );
 }

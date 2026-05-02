@@ -76,7 +76,14 @@ export function computeFinalAbilities(c: Character): FinalAbilities {
   return { base: c.abilities, bonuses, total, modifiers };
 }
 
+/**
+ * Returns the character's max HP. Prefers the persisted `maxHp` (set at
+ * creation and incremented per level-up), falling back to the L1 derivation
+ * (origin hit die + Con mod) for legacy saves and pre-creation drafts where
+ * `maxHp` is still 0.
+ */
 export function computeHp(c: Character): number {
+  if (c.maxHp && c.maxHp > 0) return c.maxHp;
   const origin = ORIGIN_BY_ID[c.originId];
   const cls = CLASS_BY_ID[c.classId];
   const subchoice = origin?.subchoices?.options.find(
@@ -90,6 +97,18 @@ export function computeHp(c: Character): number {
   );
   const hitDie = origin?.providesHp ? origin.hitDie : (cls?.fallbackHitDie ?? 8);
   return hitDie + conMod;
+}
+
+/**
+ * Average HP gained on a level-up (level ≥ 2): floor(hitDie / 2) + 1 + Con mod.
+ * Standard 5E rule. Bounded so a creature with terrible Con can't go below 1.
+ */
+export function averageHpGain(c: Character): number {
+  const origin = ORIGIN_BY_ID[c.originId];
+  const cls = CLASS_BY_ID[c.classId];
+  const hitDie = origin?.providesHp ? origin.hitDie : (cls?.fallbackHitDie ?? 8);
+  const conMod = computeFinalAbilities(c).modifiers.con;
+  return Math.max(1, Math.floor(hitDie / 2) + 1 + conMod);
 }
 
 export function computeProficiencyBonus(c: Character): number {
@@ -172,18 +191,63 @@ export function computeSavingThrows(c: Character): SaveScore[] {
   });
 }
 
-/** Spell slots and known counts at level 1 (Mystic only). */
+/**
+ * Spell slots and known counts at the character's current level. Returns null
+ * for non-spellcasting approaches. Reads the approach-level progression
+ * table introduced in the leveling change.
+ */
 export function computeSpellcasting(c: Character) {
-  const cls = CLASS_BY_ID[c.classId];
-  if (!cls?.spellcasting) return null;
+  const approach = approachById(c.approachId);
+  const sc = approach?.spellcasting;
+  if (!sc) return null;
+  const row = sc.progression[Math.max(0, c.level - 1)];
   return {
-    cantripsKnown: cls.spellcasting.cantripsKnownAt1,
-    spellsKnown: cls.spellcasting.spellsKnownAt1,
-    slotsLevel1: cls.spellcasting.spellSlotsAt1,
-    tradition: approachById(c.approachId)?.tradition ?? null,
+    cantripsKnown: row?.cantripsKnown ?? sc.cantripsKnownAt1,
+    spellsKnown: row?.spellsKnown ?? sc.spellsKnownAt1,
+    slotsLevel1: row?.spellSlots[0] ?? sc.spellSlotsAt1,
+    /** Slots per spell level, indexes 0..8 → spell levels 1..9. */
+    spellSlots: row?.spellSlots ?? [sc.spellSlotsAt1, 0, 0, 0, 0, 0, 0, 0, 0],
+    tradition: approach?.tradition ?? null,
+    abilityHint: sc.abilityHint,
   };
 }
 
 export function computeInitiative(c: Character): number {
   return computeFinalAbilities(c).modifiers.dex;
+}
+
+/**
+ * Aggregates every "feature" the character has earned through their current
+ * level, in display order: origin features (and subchoice features), then
+ * each class level's features from L1 up to current level, then each
+ * approach level's features. Includes class L1 + approach L1 features that
+ * still live on the legacy `level1Features` field.
+ */
+export function computeFeatures(c: Character): Array<{ source: string; name: string; description: string }> {
+  const out: Array<{ source: string; name: string; description: string }> = [];
+  const origin = ORIGIN_BY_ID[c.originId];
+  if (origin) {
+    for (const f of origin.features) out.push({ source: origin.name, ...f });
+    const sub = origin.subchoices?.options.find((o) => o.id === c.originSubchoiceId);
+    if (sub?.features) for (const f of sub.features) out.push({ source: sub.name, ...f });
+  }
+  const cls = CLASS_BY_ID[c.classId];
+  if (cls) {
+    for (const f of cls.level1Features) out.push({ source: cls.name, ...f });
+    for (let i = 0; i < c.level && i < cls.levelTable.length; i++) {
+      for (const f of cls.levelTable[i].features) {
+        out.push({ source: `${cls.name} L${i + 1}`, ...f });
+      }
+    }
+  }
+  const approach = approachById(c.approachId);
+  if (approach) {
+    for (const f of approach.level1Features) out.push({ source: approach.name, ...f });
+    for (let i = 0; i < c.level && i < approach.levelTable.length; i++) {
+      for (const f of approach.levelTable[i].features) {
+        out.push({ source: `${approach.name} L${i + 1}`, ...f });
+      }
+    }
+  }
+  return out;
 }

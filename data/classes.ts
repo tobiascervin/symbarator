@@ -1,14 +1,62 @@
 // The five classes of Ruins of Symbaroum (PG sect. 4, p. 96–145).
-// Level-1 data only; the levelTable is intentionally omitted at MVP because
-// the builder targets level 1.
+//
+// L1 features and class-shape metadata are encoded inline. Per-level
+// progression (L1–20) lives in `data/level-tables/<class>.ts`; this file
+// only wires the tables onto the class and approach definitions.
 
 import type { ApproachDef, ClassDef } from "@/lib/character/types";
+import {
+  CAPTAIN_APPROACH_LEVEL_TABLES,
+  CAPTAIN_LEVEL_TABLE,
+} from "./level-tables/captain";
+import {
+  HUNTER_APPROACH_LEVEL_TABLES,
+  HUNTER_LEVEL_TABLE,
+  WITCH_HUNTER_SPELLCASTING,
+} from "./level-tables/hunter";
+import {
+  MYSTIC_APPROACH_LEVEL_TABLES,
+  MYSTIC_APPROACH_SPELLCASTING,
+  MYSTIC_LEVEL_TABLE,
+} from "./level-tables/mystic";
+import {
+  FORMER_CULTIST_SPELLCASTING,
+  SCOUNDREL_APPROACH_LEVEL_TABLES,
+  SCOUNDREL_LEVEL_TABLE,
+} from "./level-tables/scoundrel";
+import {
+  TEMPLAR_SPELLCASTING,
+  WARRIOR_APPROACH_LEVEL_TABLES,
+  WARRIOR_LEVEL_TABLE,
+} from "./level-tables/warrior";
+import type {
+  ApproachLevelEntry,
+  ApproachSpellcasting,
+} from "@/lib/character/types";
+
+/**
+ * Decorates a list of L1-shaped approach definitions with their per-approach
+ * level tables and (optionally) spellcasting metadata. This keeps the inline
+ * ApproachDef literals readable; per-level data lives in `data/level-tables/`.
+ */
+function withLevelTables(
+  bases: ReadonlyArray<Omit<ApproachDef, "levelTable" | "spellcasting">>,
+  tables: Record<string, ReadonlyArray<ApproachLevelEntry>>,
+  spellcasting: Record<string, ApproachSpellcasting> = {},
+): ApproachDef[] {
+  return bases.map((b) => ({
+    ...b,
+    levelTable: tables[b.id] ?? [],
+    ...(spellcasting[b.id] ? { spellcasting: spellcasting[b.id] } : {}),
+  }));
+}
 
 // ---------------------------------------------------------------------------
 // Captain — PG p. 96
 // ---------------------------------------------------------------------------
 
-const CAPTAIN_APPROACHES: ApproachDef[] = [
+const CAPTAIN_APPROACHES: ApproachDef[] = withLevelTables(
+  [
   {
     id: "merchant-master",
     classId: "captain",
@@ -70,7 +118,9 @@ const CAPTAIN_APPROACHES: ApproachDef[] = [
       },
     ],
   },
-];
+  ],
+  CAPTAIN_APPROACH_LEVEL_TABLES,
+);
 
 const CAPTAIN: ClassDef = {
   id: "captain",
@@ -123,13 +173,15 @@ const CAPTAIN: ClassDef = {
     "two-weapon",
   ],
   approaches: CAPTAIN_APPROACHES,
+  levelTable: CAPTAIN_LEVEL_TABLE,
 };
 
 // ---------------------------------------------------------------------------
 // Hunter — PG p. 102
 // ---------------------------------------------------------------------------
 
-const HUNTER_APPROACHES: ApproachDef[] = [
+const HUNTER_APPROACHES: ApproachDef[] = withLevelTables(
+  [
   {
     id: "bounty-hunter",
     classId: "hunter",
@@ -191,6 +243,7 @@ const HUNTER_APPROACHES: ApproachDef[] = [
     name: "Witch Hunter",
     description:
       "You have dedicated your life to fighting blight beasts and corrupted sorcerers, often after personal tragedy.",
+    tradition: "theurg",
     level1Features: [
       {
         name: "Deep Knowledge",
@@ -204,7 +257,10 @@ const HUNTER_APPROACHES: ApproachDef[] = [
       },
     ],
   },
-];
+  ],
+  HUNTER_APPROACH_LEVEL_TABLES,
+  { "witch-hunter": WITCH_HUNTER_SPELLCASTING },
+);
 
 const HUNTER: ClassDef = {
   id: "hunter",
@@ -246,6 +302,7 @@ const HUNTER: ClassDef = {
     },
   ],
   approaches: HUNTER_APPROACHES,
+  levelTable: HUNTER_LEVEL_TABLE,
 };
 
 // ---------------------------------------------------------------------------
@@ -255,14 +312,16 @@ const HUNTER: ClassDef = {
 // and spellcasting ability. Hit die is d6, no armor proficiency.
 // ---------------------------------------------------------------------------
 
-const MYSTIC_APPROACHES: ApproachDef[] = [
+const MYSTIC_APPROACHES: ApproachDef[] = withLevelTables(
+  [
   {
     id: "artifact-crafter",
     classId: "mystic",
     name: "Artifact Crafter",
     description:
       "A mystic who studies the secrets of artifact creation. You craft lesser artifacts where others can only carry them.",
-    tradition: "wizard",
+    // PG p. 111 — Artifact Crafters learn spells from the Troll Singer list.
+    tradition: "troll-singer",
     level1Features: [
       {
         name: "Artifact Lore",
@@ -307,7 +366,8 @@ const MYSTIC_APPROACHES: ApproachDef[] = [
     name: "Staff Mage",
     description:
       "A practitioner who channels her magic through a runed staff — the trademark of clan-trained barbarian mystics.",
-    tradition: "staff-mage",
+    // PG p. 115 — Staff Mages learn spells from the Wizard tradition list.
+    tradition: "wizard",
     level1Features: [
       {
         name: "Bonded Staff",
@@ -322,7 +382,8 @@ const MYSTIC_APPROACHES: ApproachDef[] = [
     name: "Symbolist",
     description:
       "You command power through painted, etched, and tattooed symbols of binding. Most are found among Clan Vajvod and the trolls.",
-    tradition: "symbolist",
+    // PG p. 117 — Symbolists learn spells from the Wizard tradition list.
+    tradition: "wizard",
     level1Features: [
       {
         name: "Binding Sigil",
@@ -396,7 +457,10 @@ const MYSTIC_APPROACHES: ApproachDef[] = [
       },
     ],
   },
-];
+  ],
+  MYSTIC_APPROACH_LEVEL_TABLES,
+  MYSTIC_APPROACH_SPELLCASTING,
+);
 
 const MYSTIC: ClassDef = {
   id: "mystic",
@@ -429,12 +493,6 @@ const MYSTIC: ClassDef = {
     "Robes appropriate to your tradition",
   ],
   shadowFormula: "mystic",
-  spellcasting: {
-    abilityHint: "int",
-    cantripsKnownAt1: 2,
-    spellsKnownAt1: 1,
-    spellSlotsAt1: 2,
-  },
   level1Features: [
     {
       name: "Spellcasting",
@@ -448,13 +506,15 @@ const MYSTIC: ClassDef = {
     },
   ],
   approaches: MYSTIC_APPROACHES,
+  levelTable: MYSTIC_LEVEL_TABLE,
 };
 
 // ---------------------------------------------------------------------------
 // Scoundrel — PG p. 126
 // ---------------------------------------------------------------------------
 
-const SCOUNDREL_APPROACHES: ApproachDef[] = [
+const SCOUNDREL_APPROACHES: ApproachDef[] = withLevelTables(
+  [
   {
     id: "explorer",
     classId: "scoundrel",
@@ -480,6 +540,8 @@ const SCOUNDREL_APPROACHES: ApproachDef[] = [
     name: "Former Cultist",
     description:
       "You once followed a sorcerer who promised drug-induced insights and black salvation. You defected, hunted now by both your old cult and witch hunters.",
+    // PG p. 129 — Former Cultists learn spells from the Sorcerer tradition list.
+    tradition: "sorcerer",
     level1Features: [
       {
         name: "Channeling (Sorcerer)",
@@ -580,7 +642,10 @@ const SCOUNDREL_APPROACHES: ApproachDef[] = [
       },
     ],
   },
-];
+  ],
+  SCOUNDREL_APPROACH_LEVEL_TABLES,
+  { "former-cultist": FORMER_CULTIST_SPELLCASTING },
+);
 
 const SCOUNDREL: ClassDef = {
   id: "scoundrel",
@@ -630,13 +695,15 @@ const SCOUNDREL: ClassDef = {
     },
   ],
   approaches: SCOUNDREL_APPROACHES,
+  levelTable: SCOUNDREL_LEVEL_TABLE,
 };
 
 // ---------------------------------------------------------------------------
 // Warrior — PG p. 136
 // ---------------------------------------------------------------------------
 
-const WARRIOR_APPROACHES: ApproachDef[] = [
+const WARRIOR_APPROACHES: ApproachDef[] = withLevelTables(
+  [
   {
     id: "berserker",
     classId: "warrior",
@@ -713,6 +780,7 @@ const WARRIOR_APPROACHES: ApproachDef[] = [
     name: "Templar",
     description:
       "A Knight of the Dying Sun — heavily armed, with the fire of faith burning behind your breastplate.",
+    tradition: "theurg",
     level1Features: [
       {
         name: "Spellcasting (Theurg)",
@@ -749,7 +817,10 @@ const WARRIOR_APPROACHES: ApproachDef[] = [
       },
     ],
   },
-];
+  ],
+  WARRIOR_APPROACH_LEVEL_TABLES,
+  { templar: TEMPLAR_SPELLCASTING },
+);
 
 const WARRIOR: ClassDef = {
   id: "warrior",
@@ -801,6 +872,7 @@ const WARRIOR: ClassDef = {
     "two-weapon",
   ],
   approaches: WARRIOR_APPROACHES,
+  levelTable: WARRIOR_LEVEL_TABLE,
 };
 
 // ---------------------------------------------------------------------------
@@ -818,6 +890,69 @@ export const CLASSES: ReadonlyArray<ClassDef> = [
 export const CLASS_BY_ID: Record<string, ClassDef> = Object.fromEntries(
   CLASSES.map((c) => [c.id, c]),
 );
+
+// ---------------------------------------------------------------------------
+// Structural assertions — run at module load.
+// Guarantees the spec's structural requirements (levelTable lengths, prof
+// bonus curve, ASI slot levels, monotonic spell progression). In production
+// failures log via console.error rather than throwing so a single bad table
+// can't break the app.
+// ---------------------------------------------------------------------------
+
+import { ASI_FEAT_LEVELS } from "@/lib/character/types";
+
+(function assertLevelTables() {
+  const ASI_LEVELS = new Set<number>(ASI_FEAT_LEVELS as readonly number[]);
+  const expectedPb = (lvl: number) =>
+    lvl < 5 ? 2 : lvl < 9 ? 3 : lvl < 13 ? 4 : lvl < 17 ? 5 : 6;
+  const fail = (msg: string) => {
+    if (process.env.NODE_ENV === "production") {
+      console.error(`[level-tables] ${msg}`);
+    } else {
+      throw new Error(`[level-tables] ${msg}`);
+    }
+  };
+
+  for (const cls of CLASSES) {
+    if (cls.levelTable.length !== 20) {
+      fail(`${cls.id}: levelTable.length is ${cls.levelTable.length}, expected 20`);
+      continue;
+    }
+    for (let i = 0; i < 20; i++) {
+      const row = cls.levelTable[i];
+      const lvl = i + 1;
+      if (row.level !== lvl) fail(`${cls.id} row ${i}: level ${row.level}, expected ${lvl}`);
+      if (row.profBonus !== expectedPb(lvl))
+        fail(`${cls.id} L${lvl}: profBonus ${row.profBonus}, expected ${expectedPb(lvl)}`);
+      const hasAsi = (row.choices ?? []).some((c) => c.kind === "asi-or-feat");
+      const shouldHaveAsi = ASI_LEVELS.has(lvl);
+      // One-directional: required Symbaroum ASI levels MUST be present.
+      // Extras at non-canonical levels are allowed (some classes — Warrior at
+      // L14 — get bonus ASIs per the PG; those rows must cite the page).
+      if (shouldHaveAsi && !hasAsi)
+        fail(`${cls.id} L${lvl}: asi-or-feat missing; required by Symbaroum standard`);
+    }
+    for (const approach of cls.approaches) {
+      if (approach.levelTable.length !== 20)
+        fail(`${cls.id}/${approach.id}: levelTable.length ${approach.levelTable.length}, expected 20`);
+      const sc = approach.spellcasting;
+      if (sc) {
+        if (sc.progression.length !== 20) {
+          fail(`${cls.id}/${approach.id}: progression.length ${sc.progression.length}, expected 20`);
+          continue;
+        }
+        for (let i = 1; i < 20; i++) {
+          const prev = sc.progression[i - 1];
+          const cur = sc.progression[i];
+          if (cur.cantripsKnown < prev.cantripsKnown)
+            fail(`${cls.id}/${approach.id} L${i + 1}: cantripsKnown decreased`);
+          if (cur.spellsKnown < prev.spellsKnown)
+            fail(`${cls.id}/${approach.id} L${i + 1}: spellsKnown decreased`);
+        }
+      }
+    }
+  }
+})();
 
 export function approachesForClass(classId: string): ApproachDef[] {
   return CLASS_BY_ID[classId]?.approaches ?? [];
