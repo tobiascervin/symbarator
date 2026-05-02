@@ -45,3 +45,8 @@ next-env.d.ts
 
 # JetBrains IDE local settings
 .idea/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/

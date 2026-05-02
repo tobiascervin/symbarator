@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type {
   Ability,
   Character,
@@ -56,15 +56,9 @@ export function LevelUpDialog({ open, onOpenChange, character, onApplied }: Leve
     choices.map(initialAnswerFor),
   );
 
-  // Defensive resync: if the choices change shape (different target level,
-  // hot-reload, etc.) and the answers array drifts, rebuild it from defaults
-  // so per-step components always see a matching answer.
-  useEffect(() => {
-    if (answers.length !== choices.length) {
-      setAnswers(choices.map(initialAnswerFor));
-    }
-  }, [choices, answers.length]);
-
+  // Per-render fallback in `built.choices` keeps render robust if `answers`
+  // drifts; the parent's `key={id-level}` remount keeps the dialog instance
+  // fresh per level so this should never actually fire in practice.
   const built: LevelUpAnswers = {
     hp,
     choices: answers.length === choices.length ? answers : choices.map(initialAnswerFor),

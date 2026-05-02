@@ -12,7 +12,18 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Playwright artifacts
+    "test-results/**",
+    "playwright-report/**",
+    "playwright/.cache/**",
   ]),
+  // Test files — allow console.log for debugging.
+  {
+    files: ["e2e/**/*.ts"],
+    rules: {
+      "no-console": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

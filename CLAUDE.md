@@ -11,7 +11,9 @@ Next.js 16 (App Router) + React 19 + TypeScript strict, Tailwind v4 (`@tailwindc
 - `npm run dev` — dev server (Turbopack)
 - `npm run build` / `npm start`
 - `npm run lint` — eslint flat config (extends `eslint-config-next`)
-- No test runner is configured.
+- `npm run test:e2e` — Playwright E2E suite, headless Chromium. Reuses any `next dev` already running on port 3000 (Next 16 forbids two dev servers in the same project, so the suite shares your dev server rather than booting a separate one).
+- `npm run test:e2e:ui` — same suite in the Playwright UI runner.
+- After `npm install` on a fresh checkout: `npx playwright install chromium` (one-time, ~150 MB). Tests live in `e2e/`, with reusable `localStorage` seeding and typed `Character` fixtures in `e2e/helpers/`.
 
 `AGENTS.md` warns that this is a *current* Next.js — APIs and conventions diverge from older training data. When touching routing, server components, caching, fonts, params, etc., consult `node_modules/next/dist/docs/` before writing code. Note in particular: `params` in app routes are `Promise`s (see `app/builder/[step]/page.tsx`, `app/characters/[id]/page.tsx`) and unwrapped via `use()`.
 
