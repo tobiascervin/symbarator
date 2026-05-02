@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-02
+
+Boons & Burdens at character creation, with ability bonuses flowing through to the sheet.
+
+### Added
+
+- **Boons & Burdens wizard step** between Abilities and Skills/Equipment. Pick 0 or 1 boon and 0 or 1 burden at L1; the step is optional and skipping it is valid.
+- **Choice-boon support**: when a boon's ability bonus is `"choice"` (e.g. Blood Ties, Con Artist, Enterprise), the wizard surfaces an inline ability picker. The chosen ability persists in the new `Character.boonAbilityChoices` field.
+- **Boon ability bonuses honored on the sheet**. `computeFinalAbilities` now adds boon `+1`s as a fourth bonuses term alongside origin-fixed, origin-floating, and subchoice. A character with Archivist (INT +1) sees their final INT total bumped by 1 wherever it's displayed.
+- **Origin restrictions for boons** — hand-coded `BOON_FORBIDDEN_ORIGINS` map blocks Absolute Memory for Dwarves and Beast Tongue for Goblins (per PG p. 147–155). Restricted boons are visibly disabled in the picker and rejected by the validator if reached via hand-edited JSON.
+- **Boons and Burdens sections on the character sheet**. Resolved via `BOON_BY_ID` / `BURDEN_BY_ID`. Each section hides when its array is empty. Boons that grant an ability bonus show a `(+1 INT)`-style suffix on the card title.
+- **Reusable `<FeatGroup>` component** factored out of `<FeatList>` so Boons / Burdens / level-up Feats all share the same card style without duplication.
+- **6 new E2E tests** in `e2e/boons-burdens.spec.ts` covering: empty hides section, fixed-ability boon shows on sheet with chosen-ability label, choice-boon shows the chosen ability, burden shows on sheet, wizard picks Archivist and persists, choice-boon validation rejects empty advance then accepts after picking the ability.
+
+### Changed
+
+- **Schema** — `Character` gains a required `boonAbilityChoices: Record<string, Ability>` field. Pre-1.3 saves are backfilled with `{}` by `migrateCharacter` on first load. No persisted save fails to load.
+- **Wizard `STEPS`** widens from 7 to 8 entries; the new step lives at `/builder/boons-burdens?id=<id>`.
+- **`<FeatList>`'s "Boons" subgroup** renamed to "From the Boon list" to clarify it's the level-up `Character.feats` resolved against the boon catalog, not the new L1 `Character.boons`.
+
+### Fixed
+
+- **`/changelog` E2E selector** tightened with `.first()` — three released versions now share the date string and the previous selector matched all of them.
+
+[1.3.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.3.0
+
 ## [1.2.0] - 2026-05-02
 
 Release tooling: three Claude Code slash commands that automate the documented SemVer release flow.
