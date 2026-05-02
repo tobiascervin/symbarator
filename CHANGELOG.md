@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-02
+
+Tab-per-level spells UI and a proper grouped feat list on the sheet.
+
+### Added
+
+- **Reusable `<SpellTabs>` component** — one tab per spell level with a count badge, empty levels auto-hidden, default-active = lowest available. Used in three places: the sheet spellbook, the level-up picker, and the L1 builder approach step.
+- **`<SpellCard>` leaf component** with `display` and `picker` modes via a discriminated union; school and ritual badges; reused inside every tabbed view.
+- **`<FeatList>` component** on the character sheet — resolves boon ids via `BOON_BY_ID` and renders one card per feat (name + description). The Changeling sentinel `change-self` and `fighting-style:*` markers are grouped under a separate "Special" subsection.
+- **`e2e/sheet.spec.ts`** with two tests covering the sheet spellbook tabs (renders for known levels only; clicking a tab swaps the visible pool).
+- **`spell-tabs switch the visible pool when clicked`** test in `e2e/level-up.spec.ts`.
+
+### Changed
+
+- **Sheet spellbook** uses `<SpellTabs>` in display mode instead of two flat `<SpellList>` blocks. Only renders tabs for spell levels the character actually knows spells at.
+- **Level-up `SpellsLearnedStep`** uses `<SpellTabs>` for leveled spells; cantrips stay as a flat grid above. Removed the inline `(L1)` annotation and the "Pick from any level you have slots for: 1, 2" hint paragraph since the tab row makes the available levels self-evident.
+- **L1 builder `ApproachStep`** uses `<SpellTabs levels={[1]}>` so the visual language matches what the player will see at level-up time.
+- **Sheet feats** rendered as a grouped card list (Boons / Special) in their own Parchment section instead of `c.feats.join(", ")` inside the Features blurb.
+
+### Fixed
+
+- "Higher-level spells when slots unlock" E2E test asserts tab presence (`1st`, `2nd`) instead of the deprecated hint paragraph.
+
+[1.1.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.1.0
+
 ## [1.0.0] - 2026-05-02
 
 First feature-complete release. The character builder ships with the full Ruins of Symbaroum 5E rules data, sheet-driven leveling from L1 to L20, an E2E test suite, and the canonical PG spell catalog.
