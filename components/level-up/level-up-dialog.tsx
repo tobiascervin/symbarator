@@ -6,6 +6,7 @@ import type {
   Character,
   CharacterLevel,
   LevelChoice,
+  SpellLevel,
 } from "@/lib/character/types";
 import { ABILITY_ORDER, ABILITY_SHORT, MAX_CHARACTER_LEVEL } from "@/lib/character/types";
 import {
@@ -33,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SpellTabs } from "@/components/spells/spell-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { toast } from "sonner";
@@ -431,6 +433,9 @@ function SpellsLearnedStep({
     onChange({ ...answer, [list]: Array.from(set) });
   }
 
+  const newSpellsSet = useMemo(() => new Set(answer.newSpells), [answer.newSpells]);
+  const spellsRemaining = (choice.spells ?? 0) - answer.newSpells.length;
+
   return (
     <section className="space-y-3">
       <h3 className="font-display text-base">Spells Learned</h3>
@@ -457,11 +462,8 @@ function SpellsLearnedStep({
       )}
       {(choice.spells ?? 0) > 0 && (
         <div>
-          <p className="text-sm mb-1">
-            New spells — pick {choice.spells} ({answer.newSpells.length} chosen).{" "}
-            <span className="text-muted-foreground">
-              Pick from any level you have slots for: {accessibleLevels.map((l) => `${l}`).join(", ")}.
-            </span>
+          <p className="text-sm mb-2">
+            New spells — pick {choice.spells} ({answer.newSpells.length} chosen)
           </p>
           {spellPool.length === 0 ? (
             <p className="text-xs text-destructive">
@@ -470,23 +472,16 @@ function SpellsLearnedStep({
               {accessibleLevels.join(", ")} to unblock this pick.
             </p>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-              {spellPool.map((s) => (
-                <Label key={s.id} className="flex items-start gap-2 rounded border p-2 cursor-pointer">
-                  <Checkbox
-                    checked={answer.newSpells.includes(s.id)}
-                    onCheckedChange={() => toggle("newSpells", s.id)}
-                  />
-                  <span className="text-xs">
-                    <span className="font-display block">
-                      {s.name}{" "}
-                      <span className="text-muted-foreground">(L{s.level})</span>
-                    </span>
-                    <span className="text-muted-foreground">{s.description}</span>
-                  </span>
-                </Label>
-              ))}
-            </div>
+            <SpellTabs
+              spells={spellPool}
+              levels={accessibleLevels as SpellLevel[]}
+              mode={{
+                kind: "picker",
+                selected: newSpellsSet,
+                onToggle: (id) => toggle("newSpells", id),
+                remaining: spellsRemaining,
+              }}
+            />
           )}
         </div>
       )}

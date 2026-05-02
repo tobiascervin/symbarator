@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CLASS_BY_ID } from "@/data/classes";
 import { spellsForTradition } from "@/data/spells";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { SpellTabs } from "@/components/spells/spell-tabs";
 import { cn } from "@/lib/utils";
 import type { DraftState } from "./use-draft";
 
@@ -25,6 +27,10 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
   if (!cls) return null;
 
   const selected = cls.approaches.find((a) => a.id === draft.approachId);
+  const spellsSelected = useMemo(
+    () => new Set(draft.spellPicks?.spellsKnown ?? []),
+    [draft.spellPicks?.spellsKnown],
+  );
 
   function selectApproach(id: string) {
     update((d) => {
@@ -150,26 +156,18 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
                     1st-level spells — pick {selected.spellcasting.spellsKnownAt1} (
                     {(draft.spellPicks?.spellsKnown.length ?? 0)} chosen)
                   </p>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {spellOptions.map((s) => {
-                      const checked = draft.spellPicks?.spellsKnown.includes(s.id) ?? false;
-                      return (
-                        <Label
-                          key={s.id}
-                          className="flex items-start gap-3 rounded-md border p-2 cursor-pointer hover:border-ring/60"
-                        >
-                          <Checkbox checked={checked} onCheckedChange={() => toggleSpell(s.id)} />
-                          <span>
-                            <span className="font-display">{s.name}</span>
-                            {s.ritual ? <span className="text-xs text-muted-foreground"> (ritual)</span> : null}
-                            <span className="block text-xs text-muted-foreground">
-                              {s.school} · {s.description}
-                            </span>
-                          </span>
-                        </Label>
-                      );
-                    })}
-                  </div>
+                  <SpellTabs
+                    spells={spellOptions}
+                    levels={[1]}
+                    mode={{
+                      kind: "picker",
+                      selected: spellsSelected,
+                      onToggle: (id) => toggleSpell(id),
+                      remaining:
+                        (selected.spellcasting?.spellsKnownAt1 ?? 0) -
+                        (draft.spellPicks?.spellsKnown.length ?? 0),
+                    }}
+                  />
                 </div>
               </>
             )}

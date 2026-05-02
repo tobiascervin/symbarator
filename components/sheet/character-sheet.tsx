@@ -21,6 +21,9 @@ import {
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { Parchment } from "@/components/theme/parchment";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
+import { SpellTabs } from "@/components/spells/spell-tabs";
+import { FeatList } from "@/components/sheet/feat-list";
+import type { SpellLevel } from "@/lib/character/types";
 import { cn } from "@/lib/utils";
 
 export function CharacterSheet({ character: c }: { character: Character }) {
@@ -170,19 +173,22 @@ export function CharacterSheet({ character: c }: { character: Character }) {
                   </Feature>
                 )),
               )}
-              {c.feats.length > 0 && (
-                <Feature title={`Feats: ${c.feats.length}`}>
-                  {c.feats.join(", ")}
-                </Feature>
-              )}
             </div>
           </Parchment>
 
+          {/* Feats */}
+          {c.feats.length > 0 && (
+            <Parchment>
+              <SectionHeader>Feats</SectionHeader>
+              <FeatList feats={c.feats} />
+            </Parchment>
+          )}
+
           {/* Spells (any spellcasting approach) */}
-          {spell && c.spellPicks && (
+          {spell && c.spellPicks && (c.spellPicks.cantrips.length + c.spellPicks.spellsKnown.length) > 0 && (
             <Parchment>
               <SectionHeader>Spellcraft</SectionHeader>
-              <p className="text-sm text-[#3a322a] mb-2">
+              <p className="text-sm text-[#3a322a] mb-3">
                 Tradition: <span className="font-display">{spell.tradition ?? "—"}</span> ·
                 Slots:{" "}
                 {spell.spellSlots
@@ -190,12 +196,10 @@ export function CharacterSheet({ character: c }: { character: Character }) {
                   .filter(Boolean)
                   .join(" · ") || "—"}
               </p>
-              {c.spellPicks.cantrips.length > 0 && (
-                <SpellList title="Cantrips" ids={c.spellPicks.cantrips} />
-              )}
-              {c.spellPicks.spellsKnown.length > 0 && (
-                <SpellList title="Spells Known" ids={c.spellPicks.spellsKnown} />
-              )}
+              <SheetSpellbook
+                cantrips={c.spellPicks.cantrips}
+                spellsKnown={c.spellPicks.spellsKnown}
+              />
             </Parchment>
           )}
 
@@ -347,25 +351,25 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function SpellList({ title, ids }: { title: string; ids: string[] }) {
-  return (
-    <div className="mb-2">
-      <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
-        {title}
-      </div>
-      <ul className="space-y-1 text-[#1d1814]">
-        {ids.map((id) => {
-          const s = SPELL_BY_ID[id];
-          if (!s) return <li key={id}>{id}</li>;
-          return (
-            <li key={id}>
-              <span className="font-display">{s.name}</span>
-              {s.ritual && <span className="text-xs text-[#5a4d2f]"> · ritual</span>}
-              <span className="block text-xs text-[#3a322a]">{s.description}</span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
+function SheetSpellbook({
+  cantrips,
+  spellsKnown,
+}: {
+  cantrips: ReadonlyArray<string>;
+  spellsKnown: ReadonlyArray<string>;
+}) {
+  // Resolve every known id to its catalog entry (skip unknown ids silently;
+  // they may be from a future schema or a typo in seeded data).
+  const known = [...cantrips, ...spellsKnown]
+    .map((id) => SPELL_BY_ID[id])
+    .filter((s): s is NonNullable<typeof s> => s !== undefined);
+
+  if (known.length === 0) return null;
+
+  // Levels present in the character's known spells, ascending.
+  const levels = Array.from(new Set(known.map((s) => s.level))).sort(
+    (a, b) => a - b,
+  ) as SpellLevel[];
+
+  return <SpellTabs spells={known} levels={levels} mode={{ kind: "display" }} />;
 }

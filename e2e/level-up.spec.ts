@@ -143,8 +143,30 @@ test.describe("Level-up dialog", () => {
     await gotoSheet(page, id);
 
     await page.getByRole("button", { name: /Level Up/i }).click();
-    await expect(page.getByText(/Pick from any level you have slots for/i)).toBeVisible();
-    await expect(page.getByText(/1, 2/)).toBeVisible();
+    // The tabbed picker shows separate tabs for 1st and 2nd level.
+    await expect(page.getByRole("tab", { name: /^1st\s/ })).toBeVisible();
+    await expect(page.getByRole("tab", { name: /^2nd\s/ })).toBeVisible();
+  });
+
+  test("spell-tabs switch the visible pool when clicked", async ({ page }) => {
+    // Same seed as above — Templar at L5 levelling to L6.
+    const id = await seedCharacter(page, {
+      ...templarAtL1WithBless,
+      id: "test-templar-l5-tabs",
+      level: 5,
+      maxHp: 40,
+      spellPicks: {
+        cantrips: ["sacred-flame", "guidance", "light"],
+        spellsKnown: ["bless", "command", "shield-of-faith"],
+      },
+    });
+    await gotoSheet(page, id);
+    await page.getByRole("button", { name: /Level Up/i }).click();
+
+    // Default tab is "1st"; clicking 2nd switches the visible pool.
+    await page.getByRole("tab", { name: /^2nd\s/ }).click();
+    // Aid is a 2nd-level Theurg spell in our catalog — it should be in the pool now.
+    await expect(page.getByText("Aid", { exact: true }).first()).toBeVisible();
   });
 
   test("Level Up button disabled at L20", async ({ page }) => {
