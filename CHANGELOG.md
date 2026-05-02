@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-05-02
+
+Release tooling: three Claude Code slash commands that automate the documented SemVer release flow.
+
+### Added
+
+- **`/patch`, `/minor`, `/major` slash commands** under `.claude/commands/`. Each one runs the full release flow non-interactively: preflight (clean tree, on `main`, up-to-date with `origin`), abort if no commits since the last `v*` tag, compute the next version, draft a Keep a Changelog entry from `git log <last-tag>..HEAD`, run `npm version <level> --no-git-tag-version`, commit `release: vX.Y.Z` with CHANGELOG + package.json + package-lock.json, tag, push branch, push tag.
+- **Bias and guardrails per command**:
+    - `/patch` biases the changelog toward `### Fixed`.
+    - `/minor` biases toward `### Added` and surfaces detected breaking changes (Character/storage shape edits, modified spec scenarios) instead of silently promoting.
+    - `/major` refuses to proceed without a concrete breaking change identified, and fronts the entry with an explicit `BREAKING` callout plus migration guidance.
+- **Shared safety rails** across all three: halt on any failure, never amend or force-push, never re-tag an existing version, no `npm install` / `npm audit fix` side effects.
+
+[1.2.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.2.0
+
 ## [1.1.0] - 2026-05-02
 
 Tab-per-level spells UI and a proper grouped feat list on the sheet.
