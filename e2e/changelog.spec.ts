@@ -16,9 +16,10 @@ test.describe("Versioning + changelog", () => {
   test("/changelog renders the changelog content", async ({ page }) => {
     await page.goto("/changelog");
     await expect(page.getByRole("heading", { name: /Changelog/i })).toBeVisible();
-    // Keep a Changelog entry — the v1.0.0 release link is rendered as part of the dated h2.
+    // Keep a Changelog entries — every released version's h2 is dated.
     await expect(page.getByRole("link", { name: "1.0.0", exact: true })).toBeVisible();
-    await expect(page.locator("h2").filter({ hasText: "2026-05-02" })).toBeVisible();
+    // Latest version's h2 is the first dated heading on the page.
+    await expect(page.locator("h2").filter({ hasText: "2026-05-02" }).first()).toBeVisible();
     // No 404.
     expect(await page.title()).toMatch(/Changelog/i);
   });

@@ -5,6 +5,7 @@ import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { SKILL_BY_ID } from "@/data/skills";
+import { BOON_BY_ID } from "@/data/feats";
 
 export function abilityMod(score: number): number {
   return Math.floor((score - 10) / 2);
@@ -29,6 +30,29 @@ export interface FinalAbilities {
   modifiers: Record<Ability, number>;
 }
 
+/**
+ * Sums the +1 ability bonuses contributed by each boon in `c.boons`. For
+ * fixed-ability boons (e.g. Archivist → INT), the bonus goes to that
+ * ability. For choice-boons (`abilityBonus.ability === "choice"`), the
+ * bonus goes to `c.boonAbilityChoices[boonId]` if a choice has been made;
+ * otherwise the boon contributes nothing.
+ */
+function boonBonusesFor(c: Character): Record<Ability, number> {
+  const acc: Record<Ability, number> = {
+    str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0,
+  };
+  for (const id of c.boons) {
+    const boon = BOON_BY_ID[id];
+    const bump = boon?.abilityBonus;
+    if (!bump) continue;
+    const ability =
+      bump.ability === "choice" ? c.boonAbilityChoices[id] : bump.ability;
+    if (!ability) continue; // choice not yet made
+    acc[ability] += bump.amount;
+  }
+  return acc;
+}
+
 export function computeFinalAbilities(c: Character): FinalAbilities {
   const origin = ORIGIN_BY_ID[c.originId];
   const fixed = origin?.asi.fixed ?? {};
@@ -37,6 +61,7 @@ export function computeFinalAbilities(c: Character): FinalAbilities {
     (o) => o.id === c.originSubchoiceId,
   );
   const subchoiceAsi = subchoice?.asi ?? {};
+  const boon = boonBonusesFor(c);
 
   const bonuses: Record<Ability, number> = {
     str: 0,
@@ -49,11 +74,8 @@ export function computeFinalAbilities(c: Character): FinalAbilities {
 
   for (const k of Object.keys(bonuses) as Ability[]) {
     bonuses[k] =
-      (fixed[k] ?? 0) + (floating[k] ?? 0) + (subchoiceAsi[k] ?? 0);
+      (fixed[k] ?? 0) + (floating[k] ?? 0) + (subchoiceAsi[k] ?? 0) + boon[k];
   }
-
-  // Apply boon ability bonuses (the boon list provides +1).
-  // (Boon resolution happens in step 7 / sheet view.)
 
   const total = {
     str: c.abilities.str + bonuses.str,

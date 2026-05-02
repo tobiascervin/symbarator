@@ -55,6 +55,10 @@ test.describe("L1 builder happy path", () => {
     // Standard Array is the default tab and pre-fills values; just continue.
     await page.getByRole("button", { name: /^Continue/ }).click();
 
+    // ---- Boons & Burdens: 0/0 picks is valid; just continue. ----
+    await expect(page).toHaveURL(/\/builder\/boons-burdens/);
+    await page.getByRole("button", { name: /^Continue/ }).click();
+
     // ---- Skills & Equipment ----
     await expect(page).toHaveURL(/\/builder\/skills-equipment/);
     // Captain picks 4 class skills — check the first 4 available checkboxes.

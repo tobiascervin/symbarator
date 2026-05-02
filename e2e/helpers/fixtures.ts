@@ -42,6 +42,7 @@ function makeBase(overrides: Partial<Character> & { id: string }): Character {
     classEquipmentPicks: [0, 0, 0, 0],
     boons: [],
     burdens: [],
+    boonAbilityChoices: {},
     spellPicks: undefined,
     corruption: { permanent: 0, temporary: 0 },
     notes: "",

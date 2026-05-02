@@ -2,14 +2,14 @@
 
 import { BOON_BY_ID } from "@/data/feats";
 
-interface FeatListProps {
-  feats: ReadonlyArray<string>;
-}
-
-interface ResolvedFeat {
+interface ResolvedEntry {
   id: string;
   name: string;
   description: string;
+}
+
+interface FeatListProps {
+  feats: ReadonlyArray<string>;
 }
 
 const FIGHTING_STYLE_LABELS: Record<string, string> = {
@@ -24,14 +24,17 @@ const FIGHTING_STYLE_LABELS: Record<string, string> = {
 };
 
 /**
- * Resolves accumulated feat ids into grouped, human-readable cards.
+ * Resolves accumulated level-up feat ids into grouped, human-readable cards.
+ * "Feats" here means the level-up `Character.feats` array — not L1 boons,
+ * which are rendered separately by the sheet via `<FeatGroup>` directly.
+ *
  * Returns null when feats is empty so the caller can omit the section.
  */
 export function FeatList({ feats }: FeatListProps) {
   if (feats.length === 0) return null;
 
-  const boons: ResolvedFeat[] = [];
-  const special: ResolvedFeat[] = [];
+  const fromBoons: ResolvedEntry[] = [];
+  const special: ResolvedEntry[] = [];
 
   for (const id of feats) {
     if (id === "change-self") {
@@ -54,7 +57,7 @@ export function FeatList({ feats }: FeatListProps) {
     }
     const boon = BOON_BY_ID[id];
     if (boon) {
-      boons.push({ id, name: boon.name, description: boon.description });
+      fromBoons.push({ id, name: boon.name, description: boon.description });
     } else {
       special.push({
         id,
@@ -66,23 +69,28 @@ export function FeatList({ feats }: FeatListProps) {
 
   return (
     <div className="space-y-4 text-[#1d1814]">
-      {boons.length > 0 && (
-        <Group title="Boons" entries={boons} />
+      {fromBoons.length > 0 && (
+        <FeatGroup title="From the Boon list" entries={fromBoons} />
       )}
       {special.length > 0 && (
-        <Group title="Special" entries={special} muted />
+        <FeatGroup title="Special" entries={special} muted />
       )}
     </div>
   );
 }
 
-function Group({
+/**
+ * Reusable card-list group used by the Feats section, the Boons section, and
+ * the Burdens section on the sheet. Entries are rendered as small bordered
+ * cards with a name and description.
+ */
+export function FeatGroup({
   title,
   entries,
   muted,
 }: {
   title: string;
-  entries: ReadonlyArray<ResolvedFeat>;
+  entries: ReadonlyArray<ResolvedEntry>;
   muted?: boolean;
 }) {
   return (
@@ -91,17 +99,17 @@ function Group({
         {title}
       </p>
       <ul className="space-y-2">
-        {entries.map((f) => (
+        {entries.map((e) => (
           <li
-            key={f.id}
+            key={e.id}
             className={
               muted
                 ? "rounded-md border border-dashed border-[#3a322a]/30 bg-[#f7f1e3]/40 p-2"
                 : "rounded-md border border-[#3a322a]/20 p-2"
             }
           >
-            <p className="font-display tracking-wide text-base">{f.name}</p>
-            <p className="text-xs leading-snug text-[#3a322a]">{f.description}</p>
+            <p className="font-display tracking-wide text-base">{e.name}</p>
+            <p className="text-xs leading-snug text-[#3a322a]">{e.description}</p>
           </li>
         ))}
       </ul>

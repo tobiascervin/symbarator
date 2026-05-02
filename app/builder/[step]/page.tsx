@@ -8,6 +8,7 @@ import { BackgroundStep } from "@/components/builder/background-step";
 import { ClassStep } from "@/components/builder/class-step";
 import { ApproachStep } from "@/components/builder/approach-step";
 import { AbilitiesStep } from "@/components/builder/abilities-step";
+import { BoonsBurdensStep } from "@/components/builder/boons-burdens-step";
 import { SkillsEquipmentStep } from "@/components/builder/skills-equipment-step";
 import { IdentityStep } from "@/components/builder/identity-step";
 import { STEPS, type Step } from "@/lib/character/validation";
@@ -37,6 +38,8 @@ export default function BuilderStepPage({
             return <ApproachStep draftHook={hook} />;
           case "abilities":
             return <AbilitiesStep draftHook={hook} />;
+          case "boons-burdens":
+            return <BoonsBurdensStep draftHook={hook} />;
           case "skills-equipment":
             return <SkillsEquipmentStep draftHook={hook} />;
           case "identity":

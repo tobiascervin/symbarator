@@ -22,7 +22,8 @@ import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { Parchment } from "@/components/theme/parchment";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
 import { SpellTabs } from "@/components/spells/spell-tabs";
-import { FeatList } from "@/components/sheet/feat-list";
+import { FeatList, FeatGroup } from "@/components/sheet/feat-list";
+import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 import type { SpellLevel } from "@/lib/character/types";
 import { cn } from "@/lib/utils";
 
@@ -176,7 +177,53 @@ export function CharacterSheet({ character: c }: { character: Character }) {
             </div>
           </Parchment>
 
-          {/* Feats */}
+          {/* Boons (taken at L1) */}
+          {c.boons.length > 0 && (
+            <Parchment>
+              <SectionHeader>Boons</SectionHeader>
+              <FeatGroup
+                title="Taken at character creation"
+                entries={c.boons
+                  .map((id) => {
+                    const boon = BOON_BY_ID[id];
+                    if (!boon) {
+                      return { id, name: id, description: "Unknown boon id." };
+                    }
+                    let nameSuffix = "";
+                    if (boon.abilityBonus) {
+                      const ab =
+                        boon.abilityBonus.ability === "choice"
+                          ? c.boonAbilityChoices[id]
+                          : boon.abilityBonus.ability;
+                      if (ab) nameSuffix = ` (+1 ${ABILITY_SHORT[ab]})`;
+                    }
+                    return {
+                      id,
+                      name: `${boon.name}${nameSuffix}`,
+                      description: boon.description,
+                    };
+                  })}
+              />
+            </Parchment>
+          )}
+
+          {/* Burdens (taken at L1) */}
+          {c.burdens.length > 0 && (
+            <Parchment>
+              <SectionHeader>Burdens</SectionHeader>
+              <FeatGroup
+                title="Carried since character creation"
+                muted
+                entries={c.burdens.map((id) => {
+                  const b = BURDEN_BY_ID[id];
+                  if (!b) return { id, name: id, description: "Unknown burden id." };
+                  return { id, name: b.name, description: b.description };
+                })}
+              />
+            </Parchment>
+          )}
+
+          {/* Level-up Feats */}
           {c.feats.length > 0 && (
             <Parchment>
               <SectionHeader>Feats</SectionHeader>

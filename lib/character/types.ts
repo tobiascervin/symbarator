@@ -343,6 +343,13 @@ export interface Character {
   /** Boons (typically 0 at L1; some campaigns let players take one for free). */
   boons: string[];
   burdens: string[];
+  /**
+   * For boons whose `abilityBonus.ability === "choice"`, the player picks
+   * which ability gets the +1 at L1. Keyed by boon id. `{}` for characters
+   * with no boons or no choice-boons. Backfilled by `migrateCharacter` for
+   * pre-1.3 saves.
+   */
+  boonAbilityChoices: Record<string, Ability>;
   /** For Mystic only. */
   spellPicks?: { cantrips: string[]; spellsKnown: string[] };
   corruption: { permanent: number; temporary: number };

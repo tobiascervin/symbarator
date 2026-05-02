@@ -5,6 +5,7 @@ import type { Character } from "./types";
 import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID } from "@/data/classes";
+import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 
 export const STEPS = [
   "origin",
@@ -12,6 +13,7 @@ export const STEPS = [
   "class",
   "approach",
   "abilities",
+  "boons-burdens",
   "skills-equipment",
   "identity",
 ] as const;
@@ -24,8 +26,20 @@ export const STEP_LABELS: Record<Step, string> = {
   class: "Class",
   approach: "Approach",
   abilities: "Abilities",
+  "boons-burdens": "Boons & Burdens",
   "skills-equipment": "Skills & Equipment",
   identity: "Identity",
+};
+
+/**
+ * Hand-coded origin restrictions for boons whose PG `restriction` text
+ * names a specific origin (e.g. "Dwarves cannot take this — already part
+ * of their origin"). Boons not in this map have no machine-checkable
+ * restriction; their `restriction` text is shown as informational only.
+ */
+export const BOON_FORBIDDEN_ORIGINS: Record<string, ReadonlyArray<string>> = {
+  "absolute-memory": ["dwarf"],
+  "beast-tongue": ["goblin"],
 };
 
 export function nextStep(s: Step): Step | null {
@@ -104,6 +118,36 @@ export function validateStep(step: Step, c: Character): string | null {
       const total = Object.values(c.abilities).reduce((a, b) => a + b, 0);
       if (total === 0) return "Set your ability scores.";
       // For point-buy mode we'd validate the budget — handled in the UI.
+      return null;
+    }
+    case "boons-burdens": {
+      // 0–1 boon, 0–1 burden allowed at L1.
+      if (c.boons.length > 1) return "Pick at most 1 boon at level 1.";
+      if (c.burdens.length > 1) return "Pick at most 1 burden at level 1.";
+      // Every boon id must resolve.
+      for (const id of c.boons) {
+        const boon = BOON_BY_ID[id];
+        if (!boon) return `Unknown boon: ${id}.`;
+        // Origin restriction (hand-coded subset).
+        const forbidden = BOON_FORBIDDEN_ORIGINS[id];
+        if (forbidden && forbidden.includes(c.originId)) {
+          return `${boon.name}: ${boon.restriction ?? "not allowed for your origin."}`;
+        }
+        // Choice-boon must have a chosen ability.
+        if (boon.abilityBonus?.ability === "choice") {
+          if (!c.boonAbilityChoices[id]) {
+            return `${boon.name}: pick the ability that gets +1.`;
+          }
+          const choices = boon.abilityBonusChoices ?? [];
+          if (choices.length > 0 && !choices.includes(c.boonAbilityChoices[id])) {
+            return `${boon.name}: chosen ability is not allowed.`;
+          }
+        }
+      }
+      // Every burden id must resolve.
+      for (const id of c.burdens) {
+        if (!BURDEN_BY_ID[id]) return `Unknown burden: ${id}.`;
+      }
       return null;
     }
     case "skills-equipment": {

@@ -30,6 +30,7 @@ export function emptyCharacter(id: string): Character {
     classEquipmentPicks: [],
     boons: [],
     burdens: [],
+    boonAbilityChoices: {},
     spellPicks: undefined,
     corruption: { permanent: 0, temporary: 0 },
     notes: "",

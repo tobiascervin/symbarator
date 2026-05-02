@@ -48,6 +48,14 @@ export function migrateCharacter(raw: unknown): Character {
     };
   }
 
+  // Backfill `boonAbilityChoices` for pre-1.3 saves. The field is a record
+  // keyed by boon id; `{}` is a safe default for characters with no boons.
+  if (typeof character.boonAbilityChoices !== "object" || character.boonAbilityChoices === null) {
+    character.boonAbilityChoices = {};
+  }
+  if (!Array.isArray(character.boons)) character.boons = [];
+  if (!Array.isArray(character.burdens)) character.burdens = [];
+
   return character;
 }
 
