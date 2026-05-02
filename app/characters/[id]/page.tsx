@@ -7,6 +7,7 @@ import type { Character } from "@/lib/character/types";
 import { MAX_CHARACTER_LEVEL } from "@/lib/character/types";
 import { CharacterSheet } from "@/components/sheet/character-sheet";
 import { LevelUpDialog } from "@/components/level-up/level-up-dialog";
+import { APP_VERSION } from "@/lib/version";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -44,12 +45,20 @@ export default function CharacterPage({
     <main className="min-h-full w-full px-4 py-8 md:py-12">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6 flex items-center justify-between">
-          <Link
-            href="/"
-            className="text-xs uppercase tracking-[0.4em] text-muted-foreground hover:text-foreground"
-          >
-            ← Symbaroum
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/"
+              className="text-xs uppercase tracking-[0.4em] text-muted-foreground hover:text-foreground"
+            >
+              ← Symbaroum
+            </Link>
+            <Link
+              href="/changelog"
+              className="font-display text-[10px] uppercase tracking-[0.4em] text-muted-foreground/70 hover:text-foreground"
+            >
+              v{APP_VERSION}
+            </Link>
+          </div>
           {character && (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleExport}>

@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { LocalCharacterStore, newCharacterId, originLabel, classLabel } from "@/lib/storage/local";
 import { emptyCharacter } from "@/lib/character/defaults";
 import type { CharacterSummary } from "@/lib/character/types";
+import { APP_VERSION } from "@/lib/version";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
@@ -155,6 +156,15 @@ export default function HomePage() {
             Import from JSON
           </Button>
         </div>
+
+        <footer className="mt-16 text-center">
+          <Link
+            href="/changelog"
+            className="font-display text-xs uppercase tracking-[0.4em] text-muted-foreground hover:text-foreground"
+          >
+            v{APP_VERSION}
+          </Link>
+        </footer>
       </div>
     </main>
   );

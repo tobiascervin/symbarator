@@ -221,3 +221,52 @@
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.35 0.020 60);
 }
+
+/* Changelog markdown rendering — terse styles to make the marked output
+   readable inside the parchment card. */
+.changelog-prose h1 {
+  display: none;
+}
+.changelog-prose h2 {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(58, 50, 42, 0.25);
+  padding-bottom: 0.25rem;
+}
+.changelog-prose h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+  color: #5a4d2f;
+}
+.changelog-prose p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+.changelog-prose ul {
+  list-style: disc;
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+.changelog-prose li {
+  margin: 0.25rem 0;
+}
+.changelog-prose strong {
+  color: #1d1814;
+}
+.changelog-prose a {
+  color: #5a4d2f;
+  text-decoration: underline;
+}
+.changelog-prose code {
+  font-family: var(--font-mono);
+  background: rgba(90, 77, 47, 0.12);
+  padding: 0.05rem 0.25rem;
+  border-radius: 3px;
+  font-size: 0.9em;
+}

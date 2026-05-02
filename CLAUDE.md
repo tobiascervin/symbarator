@@ -15,6 +15,15 @@ Next.js 16 (App Router) + React 19 + TypeScript strict, Tailwind v4 (`@tailwindc
 - `npm run test:e2e:ui` — same suite in the Playwright UI runner.
 - After `npm install` on a fresh checkout: `npx playwright install chromium` (one-time, ~150 MB). Tests live in `e2e/`, with reusable `localStorage` seeding and typed `Character` fixtures in `e2e/helpers/`.
 
+### Release process
+
+The app's version is `package.json#version`, surfaced in the UI via `lib/version.ts` (single source of truth) and shown as a badge on the home footer + sheet header that links to `/changelog`. To cut a release:
+
+1. Decide the bump per [SemVer 2.0.0](https://semver.org/): MAJOR for `Character` schema breaks, MINOR for additive features, PATCH for fixes.
+2. Bump `package.json#version`.
+3. Add a `CHANGELOG.md` entry following [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) — dated heading `## [X.Y.Z] - YYYY-MM-DD` with `Added` / `Changed` / `Fixed` / `Removed` subsections.
+4. Commit with message `release: vX.Y.Z`.
+
 `AGENTS.md` warns that this is a *current* Next.js — APIs and conventions diverge from older training data. When touching routing, server components, caching, fonts, params, etc., consult `node_modules/next/dist/docs/` before writing code. Note in particular: `params` in app routes are `Promise`s (see `app/builder/[step]/page.tsx`, `app/characters/[id]/page.tsx`) and unwrapped via `use()`.
 
 ## Domain: Ruins of Symbaroum 5E
