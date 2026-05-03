@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-05-03
+
+Companion mode — the read-only character sheet becomes a play-time companion. Apply damage, spend slots, take rests, track death saves, and adjust Corruption directly from the sheet.
+
+### Added
+
+- **HP & Vitals panel** at the top of the sheet. Current/max readout (downed pill turns crimson when at 0), Damage / Heal / Set-Temp-HP inputs that apply on click or Enter. Temp HP soaks before currentHp; healing caps at maxHp; currentHp floors at 0.
+- **Hit Dice tracker + "Spend Hit Die" button** inside the Vitals panel. Heals by `floor(hitDie/2) + 1 + Con mod` (min 1) and decrements `hitDiceRemaining`.
+- **Death Saves panel** — appears only when `currentHp === 0`. Three success and three failure pips with explicit ✓ / ✗ buttons; counters cap at 3. Three successes shows a "Stable" indicator; three failures shows "Dead". Healing above 0 hides the panel and zeroes the counters.
+- **Spell Slot pip rows** above the Spellcraft tabs (only for spellcasting approaches). One pip per slot, click filled to spend, click empty to restore. Bounded by the approach's progression at the current level.
+- **Corruption parchment** with explicit `+` / `−` adjusters next to the computed Threshold; "Over" badge when `temporary > threshold`. Surfaces fields that already lived on `Character` but were never editable.
+- **Rest panel** with three buttons: Short Rest (UI affordance), Long Rest (full HP, half HD restored rounded up, all spell slots, death saves cleared, temp HP cleared), Extended Rest (long rest + every Hit Die restored).
+- **`lib/character/live-state.ts`** — pure-function module exporting every state transition (`applyDamage`, `applyHeal`, `addTempHp`, `spendSlot`, `restoreSlot`, `spendHitDie`, `recordDeathSave`, `shortRest`, `longRest`, `extendedRest`, `bumpCorruption`). All bound checks live here; UI never produces invalid state.
+- **5 new E2E tests** in `e2e/companion.spec.ts` — damage round-trip + persistence, slot spend/restore, long rest restoration, death-saves cap-and-hide, wounded level-up keeps current HP at the offset (capacity grows, no auto-heal).
+
+### Changed
+
+- **Schema** — `Character` gains five required fields: `currentHp: number`, `tempHp: number`, `currentSpellSlots: number[]` (length 9), `hitDiceRemaining: number`, `deathSaves: { successes; failures }`. Pre-1.4 saves are backfilled by `migrateCharacter` on first load: `currentHp = maxHp`, `tempHp = 0`, `currentSpellSlots` from the approach's progression row at the character's level (or nine zeros for non-spellcasters), `hitDiceRemaining = level`, `deathSaves = { 0, 0 }`. No persisted save fails to load.
+- **Level-up flow** now bumps live state alongside max stats: `currentHp` advances by the same delta `maxHp` does (a wounded character gains capacity, not healing); `hitDiceRemaining` increments by 1; newly-unlocked spell-slot tiers start full while already-existing tiers keep their spent count. The Confirm step now surfaces the current-HP delta and HD bump.
+- **Sheet layout** — the static "Hit Points" and "Hit Dice" rows in the right-column Combat block were removed (the new Vitals panel is the source of truth). The static "Shadow & Corruption" parchment is replaced by the interactive Corruption panel. The Spellcraft parchment shows pips above the spellbook tabs.
+- **Companion-mode buttons** use a Symbaroum-themed `SymButton` (crimson primary, dark-on-cream secondary) instead of shadcn `Button` defaults — the design-token palette washed out against the cream parchment background.
+
+[1.4.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.4.0
+
 ## [1.3.0] - 2026-05-02
 
 Boons & Burdens at character creation, with ability bonuses flowing through to the sheet.
