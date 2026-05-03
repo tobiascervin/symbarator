@@ -7,6 +7,7 @@ export function emptyCharacter(id: string): Character {
     createdAt: now,
     updatedAt: now,
     level: 1,
+    houseRules: { allowL1BoonBurden: false },
     identity: {
       name: "",
       pronouns: "",

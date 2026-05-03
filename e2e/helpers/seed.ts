@@ -8,6 +8,7 @@
 
 import type { Page } from "@playwright/test";
 import type { Character } from "@/lib/character/types";
+import { migrateCharacter } from "@/lib/storage/local";
 
 const KEY_PREFIX = "symbaroum:character:";
 const INDEX_KEY = "symbaroum:characters:index";
@@ -79,4 +80,18 @@ export async function readCharacter(page: Page, id: string): Promise<Character |
     },
     { key: KEY_PREFIX + id },
   );
+}
+
+/**
+ * Reads localStorage and applies the migrator the same way `LocalCharacterStore.load`
+ * does at runtime — so a test can assert on the post-migration shape even when
+ * no save has been triggered to write the migrated form back to disk.
+ */
+export async function readMigratedCharacter(page: Page, id: string): Promise<Character | null> {
+  const raw = await page.evaluate(
+    ({ key }) => window.localStorage.getItem(key),
+    { key: KEY_PREFIX + id },
+  );
+  if (!raw) return null;
+  return migrateCharacter(JSON.parse(raw));
 }

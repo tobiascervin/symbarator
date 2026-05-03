@@ -22,6 +22,9 @@ test.describe("Import / export", () => {
     const parsed = JSON.parse(json);
     expect(parsed.id).toBe(id);
     expect(parsed.identity.name).toBe(freshL1Hero.identity.name);
+    // House-rules namespace must round-trip through JSON so a character built
+    // under one table's rules reads correctly when imported at another.
+    expect(parsed.houseRules).toEqual({ allowL1BoonBurden: false });
 
     // Now go home and re-import. The hidden file input takes the file
     // directly so we don't need to interact with the OS picker.
@@ -41,5 +44,6 @@ test.describe("Import / export", () => {
     expect(after?.identity.name).toBe(freshL1Hero.identity.name);
     expect(after?.classId).toBe(freshL1Hero.classId);
     expect(after?.level).toBe(freshL1Hero.level);
+    expect(after?.houseRules).toEqual({ allowL1BoonBurden: false });
   });
 });

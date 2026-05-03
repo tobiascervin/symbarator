@@ -17,6 +17,7 @@ function makeBase(overrides: Partial<Character> & { id: string }): Character {
     createdAt: NOW,
     updatedAt: NOW,
     level: 1 as CharacterLevel,
+    houseRules: { allowL1BoonBurden: false },
     maxHp: 0,
     feats: [],
     identity: {
@@ -70,6 +71,15 @@ export const freshL1Hero: Character = makeBase({
   fightingStyle: "defense",
   classSkillPicks: ["athletics", "intimidation", "perception"],
 });
+
+/**
+ * Returns a copy of a character with the L1 Boons & Burdens house rule
+ * enabled. Use for any test that needs to visit the gated wizard step
+ * (which is otherwise skipped under the RAW default).
+ */
+export function withL1BoonsAllowed(c: Character): Character {
+  return { ...c, houseRules: { ...c.houseRules, allowL1BoonBurden: true } };
+}
 
 /** A Mystic/Wizard at L1, the spellcaster baseline. */
 export const mysticAtL1: Character = makeBase({

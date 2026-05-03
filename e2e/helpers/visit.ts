@@ -20,6 +20,7 @@ export function gotoBuilder(
     | "class"
     | "approach"
     | "abilities"
+    | "boons-burdens"
     | "skills-equipment"
     | "identity",
 ) {

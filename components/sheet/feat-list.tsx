@@ -1,11 +1,13 @@
 "use client";
 
 import { BOON_BY_ID } from "@/data/feats";
+import { FeatCard, FeatCardGroup, type FeatCardBadge } from "./feat-card";
 
 interface ResolvedEntry {
   id: string;
   name: string;
   description: string;
+  badges?: ReadonlyArray<FeatCardBadge>;
 }
 
 interface FeatListProps {
@@ -80,9 +82,9 @@ export function FeatList({ feats }: FeatListProps) {
 }
 
 /**
- * Reusable card-list group used by the Feats section, the Boons section, and
- * the Burdens section on the sheet. Entries are rendered as small bordered
- * cards with a name and description.
+ * Reusable group used by the Feats section, the Boons section, and the
+ * Burdens section on the sheet. Entries render as `FeatCard`s — same visual
+ * structure as `SpellCard` so adjacent sheet sections read coherently.
  */
 export function FeatGroup({
   title,
@@ -93,26 +95,19 @@ export function FeatGroup({
   entries: ReadonlyArray<ResolvedEntry>;
   muted?: boolean;
 }) {
+  if (entries.length === 0) return null;
   return (
-    <div>
-      <p className="font-display text-xs uppercase tracking-[0.3em] text-[#5a4d2f] mb-2">
-        {title}
-      </p>
-      <ul className="space-y-2">
-        {entries.map((e) => (
-          <li
-            key={e.id}
-            className={
-              muted
-                ? "rounded-md border border-dashed border-[#3a322a]/30 bg-[#f7f1e3]/40 p-2"
-                : "rounded-md border border-[#3a322a]/20 p-2"
-            }
-          >
-            <p className="font-display tracking-wide text-base">{e.name}</p>
-            <p className="text-xs leading-snug text-[#3a322a]">{e.description}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <FeatCardGroup title={title}>
+      {entries.map((e) => (
+        <li key={e.id}>
+          <FeatCard
+            name={e.name}
+            description={e.description}
+            badges={e.badges}
+            muted={muted}
+          />
+        </li>
+      ))}
+    </FeatCardGroup>
   );
 }

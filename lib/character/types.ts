@@ -304,11 +304,28 @@ export interface CharacterIdentity {
   background?: string; // free-form notes
 }
 
+/**
+ * Per-character house-rule opt-ins. Lives on the character (not in app
+ * settings) so the JSON export carries the player's table conventions to
+ * other browsers / GMs. New rules are added as siblings; absence on a
+ * loaded save is treated as RAW unless the migrator infers otherwise.
+ */
+export interface HouseRules {
+  /**
+   * Allow picking a Boon and/or Burden at character creation. RAW Symbaroum
+   * 5E only grants Boons via the L4+ Boon feat; some GMs allow one at L1.
+   * When `false`, the wizard's Boons & Burdens step is skipped entirely.
+   */
+  allowL1BoonBurden: boolean;
+}
+
 export interface Character {
   id: string;
   createdAt: string; // ISO
   updatedAt: string; // ISO
   level: CharacterLevel;
+  /** Per-character house-rule flags. See `HouseRules`. */
+  houseRules: HouseRules;
   /**
    * Persisted maximum HP. Set at character creation (origin hit die + Con mod)
    * and incremented per level-up. Persisted because rolled HP gains are

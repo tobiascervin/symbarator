@@ -1,7 +1,7 @@
 "use client";
 
-import { use } from "react";
-import { redirect } from "next/navigation";
+import { use, useEffect } from "react";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { WizardShell } from "@/components/builder/wizard-shell";
 import { OriginStep } from "@/components/builder/origin-step";
 import { BackgroundStep } from "@/components/builder/background-step";
@@ -27,6 +27,18 @@ export default function BuilderStepPage({
   return (
     <WizardShell step={s} draftKey={s}>
       {(hook) => {
+        // Deep-link guard for the gated boons-burdens step. If a player
+        // arrives here (typed URL, bookmark, stale Back nav from a
+        // previously-house-rule character that's since been toggled off),
+        // bounce them to the abilities step rather than render content
+        // they can't reach via normal navigation.
+        if (
+          s === "boons-burdens" &&
+          hook.draft &&
+          !hook.draft.houseRules.allowL1BoonBurden
+        ) {
+          return <BoonsBurdensRedirect />;
+        }
         switch (s) {
           case "origin":
             return <OriginStep draftHook={hook} />;
@@ -48,4 +60,14 @@ export default function BuilderStepPage({
       }}
     </WizardShell>
   );
+}
+
+function BoonsBurdensRedirect() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const id = params.get("id");
+  useEffect(() => {
+    router.replace(id ? `/builder/abilities?id=${id}` : "/");
+  }, [router, id]);
+  return null;
 }

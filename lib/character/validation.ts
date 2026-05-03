@@ -42,14 +42,28 @@ export const BOON_FORBIDDEN_ORIGINS: Record<string, ReadonlyArray<string>> = {
   "beast-tongue": ["goblin"],
 };
 
-export function nextStep(s: Step): Step | null {
-  const i = STEPS.indexOf(s);
-  return i >= 0 && i < STEPS.length - 1 ? STEPS[i + 1] : null;
+/**
+ * The active step list for a given character. Currently filters out
+ * `"boons-burdens"` when the house rule is off (RAW Symbaroum 5E grants
+ * boons via the L4+ feat, not at L1). All wizard navigation — `nextStep`,
+ * `prevStep`, the step indicator, the "Step N of M" header — MUST flow
+ * through this so the UI agrees with itself.
+ */
+export function stepsFor(c: Character): ReadonlyArray<Step> {
+  if (c.houseRules.allowL1BoonBurden) return STEPS;
+  return STEPS.filter((s) => s !== "boons-burdens");
 }
 
-export function prevStep(s: Step): Step | null {
-  const i = STEPS.indexOf(s);
-  return i > 0 ? STEPS[i - 1] : null;
+export function nextStep(s: Step, c?: Character): Step | null {
+  const list = c ? stepsFor(c) : STEPS;
+  const i = list.indexOf(s);
+  return i >= 0 && i < list.length - 1 ? list[i + 1] : null;
+}
+
+export function prevStep(s: Step, c?: Character): Step | null {
+  const list = c ? stepsFor(c) : STEPS;
+  const i = list.indexOf(s);
+  return i > 0 ? list[i - 1] : null;
 }
 
 export function validateStep(step: Step, c: Character): string | null {

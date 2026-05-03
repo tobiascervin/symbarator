@@ -198,26 +198,31 @@ export function CharacterSheet({
               <SectionHeader>Boons</SectionHeader>
               <FeatGroup
                 title="Taken at character creation"
-                entries={c.boons
-                  .map((id) => {
-                    const boon = BOON_BY_ID[id];
-                    if (!boon) {
-                      return { id, name: id, description: "Unknown boon id." };
+                entries={c.boons.map((id) => {
+                  const boon = BOON_BY_ID[id];
+                  if (!boon) {
+                    return { id, name: id, description: "Unknown boon id." };
+                  }
+                  const badges: { label: string; variant: "outline" }[] = [];
+                  if (boon.abilityBonus) {
+                    const ab =
+                      boon.abilityBonus.ability === "choice"
+                        ? c.boonAbilityChoices[id]
+                        : boon.abilityBonus.ability;
+                    if (ab) {
+                      badges.push({
+                        label: `+1 ${ABILITY_SHORT[ab]}`,
+                        variant: "outline",
+                      });
                     }
-                    let nameSuffix = "";
-                    if (boon.abilityBonus) {
-                      const ab =
-                        boon.abilityBonus.ability === "choice"
-                          ? c.boonAbilityChoices[id]
-                          : boon.abilityBonus.ability;
-                      if (ab) nameSuffix = ` (+1 ${ABILITY_SHORT[ab]})`;
-                    }
-                    return {
-                      id,
-                      name: `${boon.name}${nameSuffix}`,
-                      description: boon.description,
-                    };
-                  })}
+                  }
+                  return {
+                    id,
+                    name: boon.name,
+                    description: boon.description,
+                    badges,
+                  };
+                })}
               />
             </Parchment>
           )}

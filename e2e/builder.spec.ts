@@ -53,10 +53,10 @@ test.describe("L1 builder happy path", () => {
     // ---- Abilities: Standard Array (default) ----
     await expect(page).toHaveURL(/\/builder\/abilities/);
     // Standard Array is the default tab and pre-fills values; just continue.
-    await page.getByRole("button", { name: /^Continue/ }).click();
-
-    // ---- Boons & Burdens: 0/0 picks is valid; just continue. ----
-    await expect(page).toHaveURL(/\/builder\/boons-burdens/);
+    // Note: the L1 Boons & Burdens step is gated behind a per-character
+    // house-rules toggle on this step, defaulting to OFF — RAW Symbaroum
+    // doesn't grant boons at L1. So Continue here advances straight to
+    // Skills & Equipment, skipping Boons & Burdens entirely.
     await page.getByRole("button", { name: /^Continue/ }).click();
 
     // ---- Skills & Equipment ----

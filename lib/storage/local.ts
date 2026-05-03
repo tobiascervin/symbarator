@@ -56,6 +56,21 @@ export function migrateCharacter(raw: unknown): Character {
   if (!Array.isArray(character.boons)) character.boons = [];
   if (!Array.isArray(character.burdens)) character.burdens = [];
 
+  // Backfill `houseRules` for pre-1.6 saves. Infer `allowL1BoonBurden` from
+  // existing picks: a save with a boon or burden was made under house rules,
+  // so preserve that on first load. Saves with neither default to RAW.
+  const existingHouseRules = (character as Partial<Character>).houseRules;
+  if (
+    typeof existingHouseRules !== "object" ||
+    existingHouseRules === null ||
+    typeof existingHouseRules.allowL1BoonBurden !== "boolean"
+  ) {
+    character.houseRules = {
+      allowL1BoonBurden:
+        character.boons.length > 0 || character.burdens.length > 0,
+    };
+  }
+
   // Companion-mode live state. Pre-1.4 saves had none of these fields.
   // Default `currentHp` to `maxHp` (full health) — defaulting to 0 would
   // immediately surface death saves on first load, which would be jarring.

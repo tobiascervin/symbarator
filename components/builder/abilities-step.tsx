@@ -1,7 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ABILITY_LABELS, ABILITY_ORDER } from "@/lib/character/types";
 import type { Ability, Character } from "@/lib/character/types";
@@ -93,7 +104,103 @@ export function AbilitiesStep({ draftHook }: { draftHook: DraftState }) {
           </div>
         </CardContent>
       </Card>
+
+      <HouseRulesToggle draft={draft} update={update} />
     </div>
+  );
+}
+
+function HouseRulesToggle({
+  draft,
+  update,
+}: {
+  draft: Character;
+  update: DraftState["update"];
+}) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const enabled = draft.houseRules.allowL1BoonBurden;
+  const hasPicks = draft.boons.length > 0 || draft.burdens.length > 0;
+
+  function setEnabled(next: boolean) {
+    update((d) => {
+      d.houseRules.allowL1BoonBurden = next;
+    });
+  }
+
+  function clearPicksAndDisable() {
+    update((d) => {
+      d.houseRules.allowL1BoonBurden = false;
+      d.boons = [];
+      d.burdens = [];
+      d.boonAbilityChoices = {};
+    });
+  }
+
+  function handleToggle(next: boolean | "indeterminate") {
+    const wantOn = next === true;
+    if (wantOn === enabled) return;
+    if (!wantOn && hasPicks) {
+      setConfirmOpen(true);
+      return;
+    }
+    setEnabled(wantOn);
+  }
+
+  return (
+    <Card>
+      <CardContent className="flex items-start gap-3 pt-6">
+        <Checkbox
+          id="house-rule-l1-boons"
+          checked={enabled}
+          onCheckedChange={handleToggle}
+          className="mt-1"
+        />
+        <div className="space-y-1">
+          <Label
+            htmlFor="house-rule-l1-boons"
+            className="font-display tracking-wide text-sm cursor-pointer"
+          >
+            GM allows L1 Boons & Burdens — house rule
+          </Label>
+          <p className="text-xs text-muted-foreground leading-snug">
+            Off by default. RAW Symbaroum 5E grants Boons via the L4+ Boon
+            feat; some tables let you take one (and a Burden) at character
+            creation. Toggle on to add the Boons & Burdens step to the wizard.
+          </p>
+        </div>
+      </CardContent>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              Discard your Boons & Burdens?
+            </DialogTitle>
+            <DialogDescription>
+              Turning off the house rule will clear your current selections
+              ({draft.boons.length} boon
+              {draft.boons.length === 1 ? "" : "s"}, {draft.burdens.length}{" "}
+              burden{draft.burdens.length === 1 ? "" : "s"}). This cannot be
+              undone within this session.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Keep them
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearPicksAndDisable();
+                setConfirmOpen(false);
+              }}
+            >
+              Discard and turn off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
 }
 

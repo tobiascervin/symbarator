@@ -8,10 +8,10 @@ import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
 import { useDraft } from "@/components/builder/use-draft";
 import {
-  STEPS,
   STEP_LABELS,
   nextStep,
   prevStep,
+  stepsFor,
   validateStep,
   type Step,
 } from "@/lib/character/validation";
@@ -46,17 +46,21 @@ export function WizardShell({
       return;
     }
     await save();
-    const nxt = nextStep(step);
+    const nxt = nextStep(step, draft);
     if (nxt) router.push(`/builder/${nxt}?id=${id}`);
     else router.push(`/characters/${id}`);
   }
 
   async function handleBack() {
     await save();
-    const prv = prevStep(step);
+    const prv = draft ? prevStep(step, draft) : prevStep(step);
     if (prv) router.push(`/builder/${prv}?id=${id}`);
     else router.push("/");
   }
+
+  // Active step list depends on the character's house-rules flags. While
+  // loading, fall back to a static list so the indicator doesn't flicker.
+  const activeSteps = draft ? stepsFor(draft) : null;
 
   return (
     <main className="min-h-full w-full px-4 py-8 md:py-12">
@@ -68,41 +72,46 @@ export function WizardShell({
           >
             ← Symbaroum
           </Link>
-          <span className="font-display text-xs uppercase tracking-[0.4em] text-muted-foreground">
-            New Hero · Step {STEPS.indexOf(step) + 1} of {STEPS.length}
-          </span>
+          {activeSteps && (
+            <span className="font-display text-xs uppercase tracking-[0.4em] text-muted-foreground">
+              New Hero · Step {activeSteps.indexOf(step) + 1} of{" "}
+              {activeSteps.length}
+            </span>
+          )}
         </header>
 
         {/* Step indicator */}
-        <nav
-          aria-label="Wizard progress"
-          className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
-        >
-          {STEPS.map((s, i) => {
-            const isActive = s === step;
-            const isPast = STEPS.indexOf(step) > i;
-            const stepHref = `/builder/${s}?id=${id}`;
-            return (
-              <div key={s} className="flex items-center gap-2">
-                <Link
-                  href={isPast ? stepHref : "#"}
-                  className={cn(
-                    "font-display tracking-wider px-2 py-1 rounded-sm transition-colors",
-                    isActive && "bg-primary/20 text-primary-foreground border border-primary/40",
-                    !isActive && isPast && "text-muted-foreground hover:text-foreground",
-                    !isActive && !isPast && "text-muted-foreground/50 pointer-events-none",
+        {activeSteps && (
+          <nav
+            aria-label="Wizard progress"
+            className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"
+          >
+            {activeSteps.map((s, i) => {
+              const isActive = s === step;
+              const isPast = activeSteps.indexOf(step) > i;
+              const stepHref = `/builder/${s}?id=${id}`;
+              return (
+                <div key={s} className="flex items-center gap-2">
+                  <Link
+                    href={isPast ? stepHref : "#"}
+                    className={cn(
+                      "font-display tracking-wider px-2 py-1 rounded-sm transition-colors",
+                      isActive && "bg-primary/20 text-primary-foreground border border-primary/40",
+                      !isActive && isPast && "text-muted-foreground hover:text-foreground",
+                      !isActive && !isPast && "text-muted-foreground/50 pointer-events-none",
+                    )}
+                    aria-current={isActive ? "step" : undefined}
+                  >
+                    {STEP_LABELS[s]}
+                  </Link>
+                  {i < activeSteps.length - 1 && (
+                    <span aria-hidden className="text-muted-foreground/40">·</span>
                   )}
-                  aria-current={isActive ? "step" : undefined}
-                >
-                  {STEP_LABELS[s]}
-                </Link>
-                {i < STEPS.length - 1 && (
-                  <span aria-hidden className="text-muted-foreground/40">·</span>
-                )}
-              </div>
-            );
-          })}
-        </nav>
+                </div>
+              );
+            })}
+          </nav>
+        )}
 
         <OrnateDivider className="mb-8" />
 
@@ -120,7 +129,9 @@ export function WizardShell({
               ← Back
             </Button>
             <Button onClick={handleAdvance} className="font-display tracking-wider">
-              {nextStep(step) ? `Continue → ${STEP_LABELS[nextStep(step) as Step]}` : "Finish"}
+              {nextStep(step, draft)
+                ? `Continue → ${STEP_LABELS[nextStep(step, draft) as Step]}`
+                : "Finish"}
             </Button>
           </div>
         )}
