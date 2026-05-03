@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { LocalCharacterStore, newCharacterId, originLabel, classLabel } from "@/lib/storage/local";
 import { emptyCharacter } from "@/lib/character/defaults";
 import type { CharacterSummary } from "@/lib/character/types";
@@ -10,10 +11,14 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
+import { extractSharePayload } from "@/lib/character/share";
 import { toast } from "sonner";
 
 export default function HomePage() {
+  const router = useRouter();
   const [characters, setCharacters] = useState<CharacterSummary[] | null>(null);
+  const [pasteValue, setPasteValue] = useState("");
+  const [pasteError, setPasteError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -44,6 +49,17 @@ export default function HomePage() {
     a.download = `${(summary?.name ?? "character").replace(/[^\w\-]+/g, "_")}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function handlePasteSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const payload = extractSharePayload(pasteValue.trim());
+    if (!payload) {
+      setPasteError("That doesn't look like a Symbarator share link.");
+      return;
+    }
+    setPasteError(null);
+    router.push(`/import?c=${encodeURIComponent(payload)}`);
   }
 
   async function handleImportFile(file: File) {
@@ -156,6 +172,32 @@ export default function HomePage() {
             Import from JSON
           </Button>
         </div>
+
+        {/* Paste shared link — fallback for users on a different device than
+            the one the link arrived on, or for channels that don't autolink. */}
+        <form
+          onSubmit={handlePasteSubmit}
+          className="mt-8 flex flex-col sm:flex-row items-center gap-2 max-w-xl mx-auto"
+        >
+          <input
+            type="text"
+            placeholder="Paste a share link…"
+            value={pasteValue}
+            onChange={(e) => {
+              setPasteValue(e.target.value);
+              if (pasteError) setPasteError(null);
+            }}
+            aria-label="Paste shared character link"
+            aria-invalid={pasteError !== null}
+            className="flex-1 w-full px-3 py-2 rounded-md bg-input/40 border border-border text-sm font-mono"
+          />
+          <Button type="submit" variant="outline">
+            Open shared link
+          </Button>
+        </form>
+        {pasteError && (
+          <p className="mt-2 text-center text-sm text-destructive">{pasteError}</p>
+        )}
 
         <footer className="mt-16 text-center">
           <Link

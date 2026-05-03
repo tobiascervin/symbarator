@@ -35,6 +35,9 @@ export default function PrintPage({
 
   return (
     <main className="min-h-full w-full bg-white">
+      {/* Intentionally NO Share button here — the printable sheet is a
+          paper-transfer artifact, not the live source of truth. Sharing
+          lives on /characters/[id]; the Back link returns the user there. */}
       <div className="no-print sticky top-0 z-10 bg-white border-b border-[#1d1814]/20 px-4 py-2 flex items-center justify-between text-sm">
         <Link
           href={`/characters/${id}`}
