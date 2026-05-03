@@ -36,6 +36,11 @@ export function emptyCharacter(id: string): Character {
     notes: "",
     maxHp: 0,
     feats: [],
+    currentHp: 0,
+    tempHp: 0,
+    currentSpellSlots: new Array(9).fill(0),
+    hitDiceRemaining: 0,
+    deathSaves: { successes: 0, failures: 0 },
   };
 }
 

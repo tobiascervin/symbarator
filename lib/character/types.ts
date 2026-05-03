@@ -354,6 +354,21 @@ export interface Character {
   spellPicks?: { cantrips: string[]; spellsKnown: string[] };
   corruption: { permanent: number; temporary: number };
   notes: string;
+
+  // Companion-mode live state — mutates during play (damage, slots spent,
+  // rests). Static fields above are set at creation/level-up; everything
+  // below is what the player ticks during a session. Migrator backfills
+  // sane defaults for pre-1.4 saves.
+  /** Current HP. 0 = downed; floors at 0; never negative. */
+  currentHp: number;
+  /** Temporary HP. Absorbs damage before currentHp; overwrites if higher (does not stack). */
+  tempHp: number;
+  /** Per-spell-level remaining slots, length 9. Index i = (i+1)th-level slots. */
+  currentSpellSlots: number[];
+  /** Hit Dice still available to spend. Restored half on long rest, fully on extended rest. */
+  hitDiceRemaining: number;
+  /** Death save tally; surfaced on the sheet only when currentHp === 0. */
+  deathSaves: { successes: number; failures: number };
 }
 
 export interface CharacterSummary {

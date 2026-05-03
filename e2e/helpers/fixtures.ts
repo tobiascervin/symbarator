@@ -46,8 +46,17 @@ function makeBase(overrides: Partial<Character> & { id: string }): Character {
     spellPicks: undefined,
     corruption: { permanent: 0, temporary: 0 },
     notes: "",
+    currentHp: 0,
+    tempHp: 0,
+    currentSpellSlots: new Array(9).fill(0),
+    hitDiceRemaining: 1,
+    deathSaves: { successes: 0, failures: 0 },
   };
-  return { ...defaults, ...overrides };
+  const merged: Character = { ...defaults, ...overrides };
+  // Default companion-mode state so fixtures don't load downed.
+  if (overrides.currentHp === undefined) merged.currentHp = merged.maxHp;
+  if (overrides.hitDiceRemaining === undefined) merged.hitDiceRemaining = merged.level;
+  return merged;
 }
 
 /** A finished L1 Warrior/Berserker — enough to render the sheet. */
@@ -93,6 +102,27 @@ export const templarAtL1WithBless: Character = makeBase({
     spellsKnown: ["bless"], // already known via L1 grant
   },
   maxHp: 12, // d10 + 2 Con
+});
+
+/** A Templar at L4 — companion-mode baseline (wounded, slots to spend, HD to spend). */
+export const templarAtL4: Character = makeBase({
+  id: "test-templar-l4",
+  identity: { ...makeBase({ id: "x" }).identity, name: "Templar L4" },
+  classId: "warrior",
+  approachId: "templar",
+  level: 4 as CharacterLevel,
+  fightingStyle: "defense",
+  abilities: { str: 14, dex: 10, con: 14, int: 8, wis: 15, cha: 12 },
+  classSkillPicks: ["athletics", "insight", "perception"],
+  classEquipmentPicks: [0, 0, 0, 0],
+  spellPicks: {
+    cantrips: ["sacred-flame", "guidance"],
+    spellsKnown: ["bless", "cure-wounds", "shield-of-faith"],
+  },
+  maxHp: 30,
+  currentHp: 24, // wounded, used by damage/heal tests
+  hitDiceRemaining: 4,
+  currentSpellSlots: [3, 0, 0, 0, 0, 0, 0, 0, 0], // L4 half-caster row
 });
 
 /** A Warrior at L19 — used to test the L20 disable scenario after one level-up. */

@@ -101,7 +101,15 @@ export default function CharacterPage({
           </div>
         )}
 
-        {character && <CharacterSheet character={character} />}
+        {character && (
+          <CharacterSheet
+            character={character}
+            onChange={(updated) => {
+              setCharacter(updated);
+              void LocalCharacterStore.save(updated);
+            }}
+          />
+        )}
       </div>
       {character && (
         <LevelUpDialog

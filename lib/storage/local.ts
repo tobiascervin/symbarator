@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import type { Character, CharacterLevel, CharacterSummary } from "@/lib/character/types";
 import { MAX_CHARACTER_LEVEL } from "@/lib/character/types";
 import { ORIGIN_BY_ID } from "@/data/origins";
-import { CLASS_BY_ID } from "@/data/classes";
+import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { computeHp } from "@/lib/character/compute";
 import type { CharacterStore } from "./index";
 
@@ -55,6 +55,34 @@ export function migrateCharacter(raw: unknown): Character {
   }
   if (!Array.isArray(character.boons)) character.boons = [];
   if (!Array.isArray(character.burdens)) character.burdens = [];
+
+  // Companion-mode live state. Pre-1.4 saves had none of these fields.
+  // Default `currentHp` to `maxHp` (full health) — defaulting to 0 would
+  // immediately surface death saves on first load, which would be jarring.
+  if (typeof character.currentHp !== "number") {
+    character.currentHp = character.maxHp;
+  }
+  if (typeof character.tempHp !== "number") {
+    character.tempHp = 0;
+  }
+  if (!Array.isArray(character.currentSpellSlots) || character.currentSpellSlots.length !== 9) {
+    const approach = approachById(character.approachId);
+    const row = approach?.spellcasting?.progression[character.level - 1];
+    character.currentSpellSlots = row
+      ? [...row.spellSlots]
+      : new Array(9).fill(0);
+  }
+  if (typeof character.hitDiceRemaining !== "number") {
+    character.hitDiceRemaining = character.level;
+  }
+  if (
+    typeof character.deathSaves !== "object" ||
+    character.deathSaves === null ||
+    typeof character.deathSaves.successes !== "number" ||
+    typeof character.deathSaves.failures !== "number"
+  ) {
+    character.deathSaves = { successes: 0, failures: 0 };
+  }
 
   return character;
 }

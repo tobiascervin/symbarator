@@ -580,6 +580,13 @@ function ConfirmDiff({
       <ul className="text-sm space-y-1">
         <li>Level: {character.level} → <strong>{target}</strong></li>
         <li>Max HP: {character.maxHp || "—"} → <strong>{(character.maxHp || 0) + hpGain}</strong> (+{hpGain})</li>
+        <li>
+          Current HP: {character.currentHp} → <strong>{character.currentHp + hpGain}</strong> (+
+          {hpGain} capacity, not auto-heal)
+        </li>
+        <li>
+          Hit Dice: {character.hitDiceRemaining} → <strong>{character.hitDiceRemaining + 1}</strong>
+        </li>
         {newPb !== oldPb && <li>Proficiency bonus: +{oldPb} → <strong>+{newPb}</strong></li>}
         {asiAllocation && Object.values(asiAllocation).some((v) => (v ?? 0) > 0) && (
           <li>

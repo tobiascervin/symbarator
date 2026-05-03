@@ -259,7 +259,30 @@ export function applyLevelUp(
 ): Character {
   const next: Character = JSON.parse(JSON.stringify(c));
   next.level = target;
-  next.maxHp = (next.maxHp || computeHp(next)) + answers.hp.value;
+  const oldMax = next.maxHp || computeHp(next);
+  next.maxHp = oldMax + answers.hp.value;
+  // Companion-mode: bump live HP by the same delta so a wounded character
+  // gains room without auto-healing. New HD slot at every level. Newly-
+  // unlocked spell-slot tiers start full (already-existing tiers keep their
+  // current spent count — only a long rest restores those).
+  next.currentHp = (next.currentHp ?? oldMax) + answers.hp.value;
+  next.hitDiceRemaining = (next.hitDiceRemaining ?? 0) + 1;
+
+  const sc = approachById(next.approachId)?.spellcasting;
+  if (sc) {
+    const prev = sc.progression[c.level - 1];
+    const now = sc.progression[target - 1];
+    if (prev && now) {
+      const slots = [...(next.currentSpellSlots ?? new Array(9).fill(0))];
+      while (slots.length < 9) slots.push(0);
+      for (let i = 0; i < 9; i++) {
+        if ((prev.spellSlots[i] ?? 0) === 0 && (now.spellSlots[i] ?? 0) > 0) {
+          slots[i] = now.spellSlots[i];
+        }
+      }
+      next.currentSpellSlots = slots;
+    }
+  }
 
   const choices = requiredChoices(c, target);
   for (let i = 0; i < choices.length; i++) {

@@ -9,9 +9,7 @@ import { SKILL_BY_ID } from "@/data/skills";
 import { SPELL_BY_ID } from "@/data/spells";
 import {
   computeFinalAbilities,
-  computeHp,
   computeProficiencyBonus,
-  computeCorruptionThreshold,
   computeSavingThrows,
   computeSkillScores,
   computeSpellcasting,
@@ -23,11 +21,26 @@ import { Parchment } from "@/components/theme/parchment";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
 import { SpellTabs } from "@/components/spells/spell-tabs";
 import { FeatList, FeatGroup } from "@/components/sheet/feat-list";
+import {
+  CorruptionPanel,
+  DeathSavesPanel,
+  HpVitalsPanel,
+  RestPanel,
+  SpellSlotPips,
+} from "@/components/sheet/companion-panels";
 import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 import type { SpellLevel } from "@/lib/character/types";
 import { cn } from "@/lib/utils";
 
-export function CharacterSheet({ character: c }: { character: Character }) {
+export function CharacterSheet({
+  character: c,
+  onChange,
+}: {
+  character: Character;
+  onChange?: (updated: Character) => void;
+}) {
+  const noop = (_u: Character) => {};
+  const handleChange = onChange ?? noop;
   const origin = ORIGIN_BY_ID[c.originId];
   const subchoice = origin?.subchoices?.options.find(
     (o) => o.id === c.originSubchoiceId,
@@ -37,9 +50,7 @@ export function CharacterSheet({ character: c }: { character: Character }) {
   const approach = approachById(c.approachId);
 
   const finals = computeFinalAbilities(c);
-  const hp = computeHp(c);
   const profBonus = computeProficiencyBonus(c);
-  const corruption = computeCorruptionThreshold(c);
   const saves = computeSavingThrows(c);
   const skills = computeSkillScores(c);
   const spell = computeSpellcasting(c);
@@ -68,6 +79,10 @@ export function CharacterSheet({ character: c }: { character: Character }) {
 
       <div className="grid md:grid-cols-3 gap-6">
         <div className="space-y-6 md:col-span-2">
+          {/* Companion-mode: HP & Vitals + conditional Death Saves */}
+          <HpVitalsPanel character={c} onChange={handleChange} />
+          <DeathSavesPanel character={c} onChange={handleChange} />
+
           {/* Abilities */}
           <Parchment>
             <SectionHeader>Abilities</SectionHeader>
@@ -236,17 +251,17 @@ export function CharacterSheet({ character: c }: { character: Character }) {
             <Parchment>
               <SectionHeader>Spellcraft</SectionHeader>
               <p className="text-sm text-[#3a322a] mb-3">
-                Tradition: <span className="font-display">{spell.tradition ?? "—"}</span> ·
-                Slots:{" "}
-                {spell.spellSlots
-                  .map((n, i) => (n > 0 ? `L${i + 1}: ${n}` : null))
-                  .filter(Boolean)
-                  .join(" · ") || "—"}
+                Tradition: <span className="font-display">{spell.tradition ?? "—"}</span>
               </p>
-              <SheetSpellbook
-                cantrips={c.spellPicks.cantrips}
-                spellsKnown={c.spellPicks.spellsKnown}
-              />
+              <SpellSlotPips character={c} onChange={handleChange} />
+              {/* Bump contrast on the shared SpellTabs — its default
+                  text-foreground/60 is washed out on the cream parchment. */}
+              <div className="[&_[data-slot=tabs-trigger]]:text-[#5a4d2f] [&_[data-slot=tabs-trigger][data-active]]:text-[#1d1814] [&_[data-slot=tabs-trigger][data-active]]:after:!bg-[#7a1f1f]">
+                <SheetSpellbook
+                  cantrips={c.spellPicks.cantrips}
+                  spellsKnown={c.spellPicks.spellsKnown}
+                />
+              </div>
             </Parchment>
           )}
 
@@ -275,28 +290,17 @@ export function CharacterSheet({ character: c }: { character: Character }) {
           <Parchment>
             <SectionHeader>Combat</SectionHeader>
             <dl className="text-sm space-y-2 text-[#1d1814]">
-              <Stat label="Hit Points" value={hp} />
-              <Stat label="Hit Dice" value={`1d${origin?.hitDie ?? cls?.fallbackHitDie ?? 8}`} />
               <Stat label="Initiative" value={formatMod(initiative)} />
               <Stat label="Speed" value={`${origin?.speed ?? 30} ft.`} />
               <Stat label="Proficiency Bonus" value={`+${profBonus}`} />
             </dl>
           </Parchment>
 
-          {/* Corruption */}
-          <Parchment className="!bg-gradient-to-br !from-[#e9dec6] !to-[#caa8a4]">
-            <SectionHeader>Shadow & Corruption</SectionHeader>
-            <dl className="text-sm space-y-2 text-[#1d1814]">
-              <Stat label="Threshold" value={corruption} />
-              <Stat label="Permanent" value={c.corruption.permanent} />
-              <Stat label="Temporary" value={c.corruption.temporary} />
-            </dl>
-            <p className="text-xs italic text-[#3a322a] mt-2">
-              {cls?.shadowFormula === "mystic"
-                ? "Mystic threshold: prof bonus + casting modifier (≥ 2)."
-                : "Standard threshold: 2× prof bonus + Charisma modifier (≥ 2)."}
-            </p>
-          </Parchment>
+          {/* Corruption — interactive +/- adjusters with threshold readout. */}
+          <CorruptionPanel character={c} onChange={handleChange} />
+
+          {/* Rest panel */}
+          <RestPanel character={c} onChange={handleChange} />
 
           {/* Saves */}
           <Parchment>
