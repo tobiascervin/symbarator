@@ -32,6 +32,7 @@ export function emptyCharacter(id: string): Character {
     boons: [],
     burdens: [],
     boonAbilityChoices: {},
+    burdenAbilityChoices: {},
     spellPicks: undefined,
     corruption: { permanent: 0, temporary: 0 },
     notes: "",

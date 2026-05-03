@@ -5,7 +5,7 @@ import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { SKILL_BY_ID } from "@/data/skills";
-import { BOON_BY_ID } from "@/data/feats";
+import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 
 export function abilityMod(score: number): number {
   return Math.floor((score - 10) / 2);
@@ -53,6 +53,35 @@ function boonBonusesFor(c: Character): Record<Ability, number> {
   return acc;
 }
 
+/**
+ * Sums the +2 (or +1/+1 for Dark Blood) ability bonuses contributed by each
+ * burden in `c.burdens`. Three shapes:
+ * - `fixed`: bonus goes to the named ability.
+ * - `choose-one`: bonus goes to the single ability in `burdenAbilityChoices[id]`,
+ *   when present (otherwise the burden contributes nothing — the wizard
+ *   validator catches this case at advance time).
+ * - `choose-two`: bonus is added to each ability in `burdenAbilityChoices[id]`,
+ *   for every entry present (typically two; tolerates 0–2 for hand-edited JSON).
+ */
+function burdenBonusesFor(c: Character): Record<Ability, number> {
+  const acc: Record<Ability, number> = {
+    str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0,
+  };
+  for (const id of c.burdens) {
+    const burden = BURDEN_BY_ID[id];
+    const bonus = burden?.abilityBonus;
+    if (!bonus) continue;
+    if (bonus.kind === "fixed") {
+      acc[bonus.ability] += bonus.amount;
+      continue;
+    }
+    const choices = c.burdenAbilityChoices[id];
+    if (!choices) continue; // choice not yet made
+    for (const ab of choices) acc[ab] += bonus.amount;
+  }
+  return acc;
+}
+
 export function computeFinalAbilities(c: Character): FinalAbilities {
   const origin = ORIGIN_BY_ID[c.originId];
   const fixed = origin?.asi.fixed ?? {};
@@ -62,6 +91,7 @@ export function computeFinalAbilities(c: Character): FinalAbilities {
   );
   const subchoiceAsi = subchoice?.asi ?? {};
   const boon = boonBonusesFor(c);
+  const burden = burdenBonusesFor(c);
 
   const bonuses: Record<Ability, number> = {
     str: 0,
@@ -74,7 +104,11 @@ export function computeFinalAbilities(c: Character): FinalAbilities {
 
   for (const k of Object.keys(bonuses) as Ability[]) {
     bonuses[k] =
-      (fixed[k] ?? 0) + (floating[k] ?? 0) + (subchoiceAsi[k] ?? 0) + boon[k];
+      (fixed[k] ?? 0)
+      + (floating[k] ?? 0)
+      + (subchoiceAsi[k] ?? 0)
+      + boon[k]
+      + burden[k];
   }
 
   const total = {

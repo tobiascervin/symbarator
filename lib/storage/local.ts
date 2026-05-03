@@ -53,6 +53,15 @@ export function migrateCharacter(raw: unknown): Character {
   if (typeof character.boonAbilityChoices !== "object" || character.boonAbilityChoices === null) {
     character.boonAbilityChoices = {};
   }
+  // Backfill `burdenAbilityChoices` for pre-1.7 saves. `{}` is a safe default
+  // for characters with no burdens or no choice-burdens. Existing fixed-bonus
+  // burdens (e.g. Bestial) need no entry — compute reads from the catalog.
+  if (
+    typeof character.burdenAbilityChoices !== "object" ||
+    character.burdenAbilityChoices === null
+  ) {
+    character.burdenAbilityChoices = {};
+  }
   if (!Array.isArray(character.boons)) character.boons = [];
   if (!Array.isArray(character.burdens)) character.burdens = [];
 

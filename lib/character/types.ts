@@ -272,10 +272,37 @@ export interface BoonDef {
   restriction?: string;
 }
 
+/**
+ * Ability bonus shape for a Burden. Three kinds:
+ * - `fixed`: a single named ability gets `+amount` (canonical: `+2`).
+ * - `choose-one`: player picks one ability — optionally restricted by `from`,
+ *   defaults to any of the six — that gets `+amount` (canonical: `+2`).
+ * - `choose-two`: player picks two distinct abilities, each gets `+amount`
+ *   (canonical: Dark Blood, `+1` each).
+ *
+ * The wizard surfaces an inline picker for the `choose-*` variants and the
+ * validator rejects advance until the cardinality and `from`-membership
+ * are satisfied.
+ */
+export type BurdenBonus =
+  | { kind: "fixed"; ability: Ability; amount: 2 }
+  | { kind: "choose-one"; from?: ReadonlyArray<Ability>; amount: 2 }
+  | { kind: "choose-two"; from?: ReadonlyArray<Ability>; amount: 1 };
+
 export interface BurdenDef {
   id: string;
   name: string;
   description: string;
+  /** Ability bonus this burden grants (PG: most are `+2`; Dark Blood is `+1/+1`). */
+  abilityBonus?: BurdenBonus;
+  /**
+   * Permanent Corruption gained at character creation (PG: Dark Blood adds `+2`).
+   * Informational only — the wizard surfaces a warning chip and the player
+   * adjusts `Character.corruption.permanent` manually via the sheet's
+   * Corruption panel. NOT auto-applied to avoid coupling with the
+   * player-mutable in-play corruption value.
+   */
+  startingCorruption?: number;
 }
 
 export type SpellLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
@@ -367,6 +394,13 @@ export interface Character {
    * pre-1.3 saves.
    */
   boonAbilityChoices: Record<string, Ability>;
+  /**
+   * For burdens whose `abilityBonus.kind` is `"choose-one"` or `"choose-two"`,
+   * the player's chosen ability/abilities. Length 1 for `choose-one`, length 2
+   * for `choose-two`. Fixed-bonus burdens have no entry. `{}` for characters
+   * with no choice-burdens. Backfilled by `migrateCharacter` for pre-1.7 saves.
+   */
+  burdenAbilityChoices: Record<string, ReadonlyArray<Ability>>;
   /** For Mystic only. */
   spellPicks?: { cantrips: string[]; spellsKnown: string[] };
   corruption: { permanent: number; temporary: number };

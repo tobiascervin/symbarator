@@ -1,7 +1,7 @@
 "use client";
 
 import type { Ability } from "@/lib/character/types";
-import { ABILITY_LABELS, ABILITY_ORDER } from "@/lib/character/types";
+import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/types";
 import { BOONS, BURDENS } from "@/data/feats";
 import { BOON_FORBIDDEN_ORIGINS } from "@/lib/character/validation";
 import {
@@ -51,7 +51,45 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
 
   function selectBurden(id: string) {
     update((d) => {
-      d.burdens = d.burdens[0] === id ? [] : [id];
+      // Toggle: clicking the active burden clears it (and its choice picks).
+      if (d.burdens[0] === id) {
+        d.burdens = [];
+        const { [id]: _drop, ...rest } = d.burdenAbilityChoices;
+        void _drop;
+        d.burdenAbilityChoices = rest;
+        return;
+      }
+      d.burdens = [id];
+      // Selecting a different burden clears any prior choice picks.
+      d.burdenAbilityChoices = {};
+    });
+  }
+
+  function setBurdenChoiceOne(burdenId: string, ability: Ability) {
+    update((d) => {
+      d.burdenAbilityChoices = {
+        ...d.burdenAbilityChoices,
+        [burdenId]: [ability],
+      };
+    });
+  }
+
+  function toggleBurdenChoiceTwo(burdenId: string, ability: Ability) {
+    update((d) => {
+      const current = d.burdenAbilityChoices[burdenId] ?? [];
+      let next: ReadonlyArray<Ability>;
+      if (current.includes(ability)) {
+        next = current.filter((a) => a !== ability);
+      } else if (current.length < 2) {
+        next = [...current, ability];
+      } else {
+        // At max — replace the oldest pick with the new one.
+        next = [current[1], ability];
+      }
+      d.burdenAbilityChoices = {
+        ...d.burdenAbilityChoices,
+        [burdenId]: next,
+      };
     });
   }
 
@@ -158,6 +196,7 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {BURDENS.map((b) => {
             const isSelected = draft.burdens.includes(b.id);
+            const picks = draft.burdenAbilityChoices[b.id] ?? [];
             return (
               <Card
                 key={b.id}
@@ -176,11 +215,80 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
                 )}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="font-display text-lg">{b.name}</CardTitle>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <CardTitle className="font-display text-lg">{b.name}</CardTitle>
+                    {b.abilityBonus && (
+                      <Badge
+                        variant="outline"
+                        className="font-display text-[10px] tracking-widest uppercase"
+                      >
+                        {burdenBonusLabel(b.abilityBonus, picks)}
+                      </Badge>
+                    )}
+                  </div>
                   <CardDescription className="text-xs leading-snug">
                     {b.description}
                   </CardDescription>
                 </CardHeader>
+                {isSelected && b.startingCorruption && (
+                  <CardContent className="pt-0">
+                    <p className="text-[11px] italic text-destructive/90">
+                      Warning: +{b.startingCorruption} permanent Corruption — track manually on the sheet's Corruption panel.
+                    </p>
+                  </CardContent>
+                )}
+                {isSelected && b.abilityBonus?.kind === "choose-one" && (
+                  <CardContent className="pt-0">
+                    <p className="font-display tracking-wide text-xs uppercase text-muted-foreground mb-2">
+                      Pick the ability
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(b.abilityBonus.from ?? ABILITY_ORDER).map((ab) => {
+                        const active = picks[0] === ab;
+                        return (
+                          <Button
+                            key={ab}
+                            type="button"
+                            size="sm"
+                            variant={active ? "default" : "outline"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBurdenChoiceOne(b.id, ab);
+                            }}
+                          >
+                            {ABILITY_LABELS[ab]}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                )}
+                {isSelected && b.abilityBonus?.kind === "choose-two" && (
+                  <CardContent className="pt-0">
+                    <p className="font-display tracking-wide text-xs uppercase text-muted-foreground mb-2">
+                      Pick 2 abilities ({picks.length} of 2)
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(b.abilityBonus.from ?? ABILITY_ORDER).map((ab) => {
+                        const active = picks.includes(ab);
+                        return (
+                          <Button
+                            key={ab}
+                            type="button"
+                            size="sm"
+                            variant={active ? "default" : "outline"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleBurdenChoiceTwo(b.id, ab);
+                            }}
+                          >
+                            {ABILITY_LABELS[ab]}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             );
           })}
@@ -188,4 +296,23 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
       </section>
     </div>
   );
+}
+
+function burdenBonusLabel(
+  bonus: NonNullable<(typeof BURDENS)[number]["abilityBonus"]>,
+  picks: ReadonlyArray<Ability>,
+): string {
+  if (bonus.kind === "fixed") {
+    return `+${bonus.amount} ${ABILITY_SHORT[bonus.ability]}`;
+  }
+  if (bonus.kind === "choose-one") {
+    return picks[0]
+      ? `+${bonus.amount} ${ABILITY_SHORT[picks[0]]}`
+      : `+${bonus.amount} (choose 1)`;
+  }
+  // choose-two
+  if (picks.length === 2) {
+    return `+${bonus.amount} ${ABILITY_SHORT[picks[0]]} · +${bonus.amount} ${ABILITY_SHORT[picks[1]]}`;
+  }
+  return `+${bonus.amount}/+${bonus.amount} (choose 2)`;
 }

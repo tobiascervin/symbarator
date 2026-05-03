@@ -71,6 +71,28 @@ export async function seedRaw(
   return id;
 }
 
+/**
+ * Re-registers the seeding init script with the character's CURRENT
+ * localStorage state. Use this between the wizard's client-side save and a
+ * subsequent full page navigation (`page.goto`) so the init script doesn't
+ * overwrite mutations the wizard made via SPA navigation. Without this,
+ * `gotoSheet(...)` after a wizard Continue reverts localStorage to the
+ * original seed payload.
+ */
+export async function reseedCurrent(page: Page, id: string): Promise<void> {
+  const current = await page.evaluate(
+    ({ key }) => window.localStorage.getItem(key),
+    { key: KEY_PREFIX + id },
+  );
+  if (!current) return;
+  await page.addInitScript(
+    ({ key, payload }) => {
+      window.localStorage.setItem(key, payload);
+    },
+    { key: KEY_PREFIX + id, payload: current },
+  );
+}
+
 /** Read a character back from the page's localStorage (post-action assertions). */
 export async function readCharacter(page: Page, id: string): Promise<Character | null> {
   return page.evaluate(

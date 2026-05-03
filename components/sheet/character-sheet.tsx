@@ -237,7 +237,30 @@ export function CharacterSheet({
                 entries={c.burdens.map((id) => {
                   const b = BURDEN_BY_ID[id];
                   if (!b) return { id, name: id, description: "Unknown burden id." };
-                  return { id, name: b.name, description: b.description };
+                  const badges: { label: string; variant: "outline" }[] = [];
+                  const bonus = b.abilityBonus;
+                  if (bonus) {
+                    if (bonus.kind === "fixed") {
+                      badges.push({
+                        label: `+${bonus.amount} ${ABILITY_SHORT[bonus.ability]}`,
+                        variant: "outline",
+                      });
+                    } else {
+                      const picks = c.burdenAbilityChoices[id] ?? [];
+                      for (const ab of picks) {
+                        badges.push({
+                          label: `+${bonus.amount} ${ABILITY_SHORT[ab]}`,
+                          variant: "outline",
+                        });
+                      }
+                    }
+                  }
+                  return {
+                    id,
+                    name: b.name,
+                    description: b.description,
+                    badges,
+                  };
                 })}
               />
             </Parchment>

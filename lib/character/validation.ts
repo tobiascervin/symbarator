@@ -158,9 +158,33 @@ export function validateStep(step: Step, c: Character): string | null {
           }
         }
       }
-      // Every burden id must resolve.
+      // Every burden id must resolve, and choice-burdens need their picks.
       for (const id of c.burdens) {
-        if (!BURDEN_BY_ID[id]) return `Unknown burden: ${id}.`;
+        const burden = BURDEN_BY_ID[id];
+        if (!burden) return `Unknown burden: ${id}.`;
+        const bonus = burden.abilityBonus;
+        if (!bonus || bonus.kind === "fixed") continue;
+        const picks = c.burdenAbilityChoices[id] ?? [];
+        const allowed = bonus.from;
+        if (bonus.kind === "choose-one") {
+          if (picks.length !== 1) {
+            return `${burden.name}: pick the ability that gets +${bonus.amount}.`;
+          }
+          if (allowed && !allowed.includes(picks[0])) {
+            return `${burden.name}: chosen ability is not allowed.`;
+          }
+        } else {
+          // choose-two
+          if (picks.length !== 2) {
+            return `${burden.name}: pick exactly 2 abilities to receive +${bonus.amount} each.`;
+          }
+          if (picks[0] === picks[1]) {
+            return `${burden.name}: pick 2 different abilities.`;
+          }
+          if (allowed && (!allowed.includes(picks[0]) || !allowed.includes(picks[1]))) {
+            return `${burden.name}: chosen abilities are not allowed.`;
+          }
+        }
       }
       return null;
     }

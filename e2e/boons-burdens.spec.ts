@@ -1,9 +1,10 @@
 // Boons & Burdens wizard step + sheet integration.
 
 import { test, expect } from "@playwright/test";
-import { seedCharacter, readCharacter } from "./helpers/seed";
+import { seedCharacter, seedRaw, readCharacter, readMigratedCharacter, reseedCurrent } from "./helpers/seed";
 import { freshL1Hero, withL1BoonsAllowed } from "./helpers/fixtures";
 import { gotoBuilder, gotoSheet } from "./helpers/visit";
+import { computeFinalAbilities } from "@/lib/character/compute";
 
 test.describe("Boons & Burdens", () => {
   test("seeded character without boons hides Boons section on sheet", async ({ page }) => {
@@ -43,7 +44,7 @@ test.describe("Boons & Burdens", () => {
     await expect(page.getByText(/^\+1 CHA$/)).toBeVisible();
   });
 
-  test("burden seeded directly is shown on the sheet", async ({ page }) => {
+  test("burden seeded directly is shown on the sheet with its bonus badge", async ({ page }) => {
     const id = await seedCharacter(page, {
       ...freshL1Hero,
       id: "test-nightmares-hero",
@@ -53,6 +54,8 @@ test.describe("Boons & Burdens", () => {
 
     await expect(page.getByRole("heading", { name: /^Burdens$/ })).toBeVisible();
     await expect(page.getByText(/^Nightmares$/)).toBeVisible();
+    // Nightmares is a +2 CON burden — the FeatCard badge renders alongside the name.
+    await expect(page.getByText(/^\+2 CON$/)).toBeVisible();
   });
 
   test("wizard step lets the player pick a boon and persists it", async ({ page }) => {
@@ -133,5 +136,118 @@ test.describe("L1 Boons & Burdens house rule (gating)", () => {
 
     await continueBtn.click();
     await expect(page).toHaveURL(/\/builder\/boons-burdens/);
+  });
+});
+
+test.describe("Burden ability bonuses (compute integration)", () => {
+  test("fixed-bonus burden raises the named ability via computeFinalAbilities", async ({ page }) => {
+    const seeded = {
+      ...freshL1Hero,
+      id: "test-bestial-bonus",
+      burdens: ["bestial"], // +2 CON
+    };
+    const id = await seedCharacter(page, seeded);
+    await gotoSheet(page, id);
+
+    const after = await readMigratedCharacter(page, id);
+    expect(after).not.toBeNull();
+    const baseline = computeFinalAbilities({ ...after!, burdens: [], burdenAbilityChoices: {} });
+    const withBurden = computeFinalAbilities(after!);
+    // Burden adds exactly +2 CON; everything else is unchanged.
+    expect(withBurden.total.con).toBe(baseline.total.con + 2);
+    expect(withBurden.total.str).toBe(baseline.total.str);
+    expect(withBurden.total.dex).toBe(baseline.total.dex);
+    expect(withBurden.total.int).toBe(baseline.total.int);
+    expect(withBurden.total.wis).toBe(baseline.total.wis);
+    expect(withBurden.total.cha).toBe(baseline.total.cha);
+
+    // Sheet renders the bonus badge for the burden card.
+    await expect(page.getByText(/^\+2 CON$/)).toBeVisible();
+  });
+
+  test("choose-one burden — picker rejects advance until ability picked, then persists", async ({ page }) => {
+    const id = await seedCharacter(page, withL1BoonsAllowed(freshL1Hero));
+    await gotoBuilder(page, id, "boons-burdens");
+
+    // Pick Impulsive (choose-one between STR and CHA) but don't pick the ability.
+    await page.getByRole("button", { name: /^Impulsive/ }).click();
+    await page.getByRole("button", { name: /^Continue/ }).click();
+
+    // Validation toast; URL doesn't advance.
+    await expect(page.getByText(/Impulsive: pick the ability that gets \+2/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/builder\/boons-burdens/);
+
+    // Pick Strength via the inline picker, then advance succeeds.
+    // The Impulsive card's picker only offers STR and CHA.
+    const impulsiveCard = page.locator("div").filter({ hasText: /^Impulsive/ }).first();
+    await impulsiveCard.getByRole("button", { name: /^Strength$/ }).click();
+    await page.getByRole("button", { name: /^Continue/ }).click();
+    await expect(page).toHaveURL(/\/builder\/skills-equipment/);
+
+    const after = await readCharacter(page, id);
+    expect(after?.burdens).toEqual(["impulsive"]);
+    expect(after?.burdenAbilityChoices?.["impulsive"]).toEqual(["str"]);
+  });
+
+  test("Dark Blood (choose-two) — surfaces corruption warning, requires 2 distinct picks, raises both abilities", async ({ page }) => {
+    const id = await seedCharacter(page, withL1BoonsAllowed(freshL1Hero));
+    await gotoBuilder(page, id, "boons-burdens");
+
+    await page.getByRole("button", { name: /^Dark Blood/ }).click();
+
+    // Warning chip is visible when Dark Blood is selected.
+    await expect(page.getByText(/\+2 permanent Corruption — track manually/i)).toBeVisible();
+
+    // Try to advance with no picks — validation rejects.
+    await page.getByRole("button", { name: /^Continue/ }).click();
+    await expect(
+      page.getByText(/Dark Blood: pick exactly 2 abilities/i),
+    ).toBeVisible();
+
+    // Pick STR + WIS via the inline picker (any-of-six for choose-two).
+    const darkBloodCard = page.locator("div").filter({ hasText: /^Dark Blood/ }).first();
+    await darkBloodCard.getByRole("button", { name: /^Strength$/ }).click();
+    await darkBloodCard.getByRole("button", { name: /^Wisdom$/ }).click();
+    await page.getByRole("button", { name: /^Continue/ }).click();
+    await expect(page).toHaveURL(/\/builder\/skills-equipment/);
+
+    // Persisted picks and the compute result.
+    const after = await readMigratedCharacter(page, id);
+    expect(after?.burdens).toEqual(["dark-blood"]);
+    expect(after?.burdenAbilityChoices?.["dark-blood"]).toEqual(["str", "wis"]);
+    expect(after?.houseRules?.allowL1BoonBurden).toBe(true);
+    const baseline = computeFinalAbilities({ ...after!, burdens: [], burdenAbilityChoices: {} });
+    const withBurden = computeFinalAbilities(after!);
+    expect(withBurden.total.str).toBe(baseline.total.str + 1);
+    expect(withBurden.total.wis).toBe(baseline.total.wis + 1);
+
+    // Sheet renders two badges for Dark Blood's +1/+1. Re-seed the init
+    // script with the post-wizard localStorage state so `gotoSheet`'s full
+    // page navigation doesn't revert localStorage to the original seed.
+    await reseedCurrent(page, id);
+    await gotoSheet(page, id);
+    await expect(page.getByText(/^Dark Blood$/)).toBeVisible();
+    await expect(page.getByText(/\+1 STR/).first()).toBeVisible();
+    await expect(page.getByText(/\+1 WIS/).first()).toBeVisible();
+  });
+
+  test("migration backfills burdenAbilityChoices and existing fixed burden contributes its bonus immediately", async ({ page }) => {
+    // Seed a pre-1.7-shape raw save that lacks `burdenAbilityChoices` entirely
+    // but already has a fixed burden picked. `seedRaw` writes via init script,
+    // so it works before any page navigation.
+    const { burdenAbilityChoices: _drop, ...seedShape } = {
+      ...freshL1Hero,
+      id: "test-pre-1.7-with-burden",
+      burdens: ["bloodthirst"], // +2 STR
+    };
+    void _drop;
+    const id = await seedRaw(page, seedShape.id, seedShape);
+
+    await gotoSheet(page, id);
+    const after = await readMigratedCharacter(page, id);
+    expect(after?.burdenAbilityChoices).toEqual({});
+    const baseline = computeFinalAbilities({ ...after!, burdens: [], burdenAbilityChoices: {} });
+    const withBurden = computeFinalAbilities(after!);
+    expect(withBurden.total.str).toBe(baseline.total.str + 2);
   });
 });
