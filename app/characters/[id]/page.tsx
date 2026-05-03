@@ -64,6 +64,14 @@ export default function CharacterPage({
               <Button variant="outline" size="sm" onClick={handleExport}>
                 Export JSON
               </Button>
+              <Link
+                href={`/characters/${character.id}/print`}
+                target="_blank"
+                rel="noreferrer"
+                className={buttonVariants({ size: "sm", variant: "outline" })}
+              >
+                Print
+              </Link>
               <Button
                 size="sm"
                 onClick={() => setLevelUpOpen(true)}

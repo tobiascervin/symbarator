@@ -1,0 +1,25 @@
+/* Print-route page setup. Loaded only on /characters/[id]/print. */
+
+@page {
+  size: A4;
+  margin: 12mm 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: white !important;
+    color: #1d1814 !important;
+  }
+
+  /* Hide any element marked .no-print (back link, "Print again" button). */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Anchor styling: prints solid black, no underline noise. */
+  a {
+    color: #1d1814;
+    text-decoration: none;
+  }
+}
