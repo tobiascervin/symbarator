@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-05-03
+
+Tap-to-cast spells in companion mode. Click any spell on the sheet and a Cast popover opens showing the live computed numbers (Spell Mod, Attack, Save DC), the dice you'll actually roll for that spell at the character's current level, and per-tier "Cast at L<n>" buttons that spend a slot via the existing pip primitive. Cantrips auto-scale by character level (1d10 → 2d10 → 3d10 → 4d10 at L5/11/17); leveled spells expand their dice when cast at a higher slot.
+
+### Added
+
+- **`<SpellCastPopover>`** in `components/spells/spell-cast-popover.tsx` — built on the existing Dialog primitive. Header shows the spell's name, level, school, and ritual badge. A computed-numbers band always renders (Spell Mod, Attack, Save DC + the spellcasting ability used). An effect band renders when the spell has structured `effect` data — damage / heal dice with type, save ability + DC + half-on-save indicator, attack mod, scaling note. Description always renders at the bottom.
+- **Cast-at-slot buttons** in the popover for leveled spells (L1+). One button per tier from the spell's base level through L9, showing the remaining slot count. Disabled tiers (zero slots) get a hover tooltip explaining why. Clicking spends the slot via the existing `spendSlot(c, n)` from `lib/character/live-state.ts` — same primitive the pip row already uses, so no parallel mutation path. Cantrips render no Cast buttons (they auto-scale instead).
+- **`SpellEffect` discriminated union** on `SpellDef` (optional) — four kinds: `attack` (spell-attack roll → damage), `save` (target rolls a save → damage and/or rider effect), `heal` (HP dice), and `utility` (explicitly no roll). Plus `SpellScaling` (also optional): `cantrip` (a `bands` array marking the character-level thresholds at which damage scales) and `upcast` (per-slot-level dice added when cast at a higher tier).
+- **`lib/character/spells.ts`** module with the cast-helper math: `spellcastingAbility(c)`, `spellAbilityModValue(c)`, `spellAttackMod(c)`, `spellSaveDc(c)`, and `resolveSpellEffect(spell, c, castAtLevel)`. The resolver applies cantrip-band scaling for cantrips and upcast scaling for leveled spells; description-only spells return a `kind: "utility"` shape so the popover can degrade to "see description" cleanly.
+- **All 21 cantrips and all 49 1st-level spells** in `data/spells.ts` are now encoded with their effect/scaling shape — attack cantrips get a 4-band scaling table (L1/5/11/17), save cantrips the same; leveled damage spells get `upcast` scaling. The Symbaroum-flavored entries (Black Bolt, Holy Smoke, Spirit Walk, Tale of Ashes) are encoded per the PG mechanics, with utility-marked entries for spells whose effect doesn't need a roll. Higher-level spells (2nd–9th) remain description-only and degrade gracefully — a follow-up content pass can fill them in.
+- **`SpellCard.display.onCast?`** prop turns the spell card into a `<button>` with hover/focus rings and an `aria-label="Cast {spell.name}"` when defined. The companion-mode wrapper drills the prop through `SpellTabs.display.onCast?`. Wizard picker mode and the printable sheet leave the prop undefined and behave as before.
+- **7 new E2E tests** in `e2e/spell-cast.spec.ts` covering the compute helpers, cantrip scaling at L1 vs L5, Burning Hands upcast at L3, popover-open with computed-numbers verification (Mystic INT 15 → DC 12, attack +4), the slot-spend round-trip via `currentSpellSlots`, the description-only utility fallback, and the printable-sheet non-interactivity check. Suite total: **56 passing**.
+
+### Known limitations
+
+- **Magic Missile** and **Sleep** are encoded as `kind: "utility"` because their auto-hit / HP-pool mechanics don't fit the `attack` discriminator cleanly. Their description text carries the math.
+- **Eldritch Blast** scales dice in the popover (1d10 → 2d10 → 3d10 → 4d10), but RAW each beam is a separate attack roll. Description notes this.
+- **False Life's** `+5 temp HP per slot above L1` upcast isn't auto-scaled in the live dice — the description carries the rule.
+- **Sorcerer's "choose your spellcasting ability at L1" rule** still uses the approach's `abilityHint` (CHA for Sorcerer), so a Sorcerer who picked INT or WIS at L1 will see `(CHA)` in the popover and a wrong DC. Tracked as a follow-up `sorcerer-ability-override` change.
+- **Ritual cast button** is not yet implemented. Spells flagged `ritual: true` show the ritual badge but the popover doesn't offer a "cast as ritual (no slot)" path — for v1 the player just notes it and casts manually.
+- **Cast popover uses Dialog** (centered overlay) rather than an anchored Popover. If it feels heavy mid-combat, swap is straightforward.
+
+[1.8.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.8.0
+
 ## [1.7.0] - 2026-05-03
 
 Burdens now mechanically count: the +2 (or +1/+1 for Dark Blood) ability bonus from a picked burden flows through `computeFinalAbilities` and shows up on the stat block, saves, and skill modifiers. Choice-burdens (Addiction, Impulsive, Seizures, Ward, Dark Blood) gain inline ability pickers in the wizard, and the sheet renders each burden's bonus as a badge alongside the spell-style boon and feat cards from v1.6.
