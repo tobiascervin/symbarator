@@ -20,7 +20,15 @@ const ORDINAL: Record<number, string> = {
 };
 
 export type SpellTabsMode =
-  | { kind: "display" }
+  | {
+      kind: "display";
+      /**
+       * When defined, each rendered spell card becomes a tap target that
+       * opens a cast popover for the spell. Used by the sheet's companion
+       * mode; printable mode and the level-up review leave it undefined.
+       */
+      onCast?(spell: SpellDef): void;
+    }
   | {
       kind: "picker";
       selected: ReadonlySet<string>;
@@ -99,7 +107,14 @@ export function SpellTabs({ spells, levels, defaultLevel, mode }: SpellTabsProps
           <div className="grid sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1">
             {grouped.get(lvl)!.map((spell) => {
               if (mode.kind === "display") {
-                return <SpellCard key={spell.id} mode="display" spell={spell} />;
+                return (
+                  <SpellCard
+                    key={spell.id}
+                    mode="display"
+                    spell={spell}
+                    onCast={mode.onCast ? () => mode.onCast!(spell) : undefined}
+                  />
+                );
               }
               const selected = mode.selected.has(spell.id);
               const disabled = !selected && mode.remaining <= 0;

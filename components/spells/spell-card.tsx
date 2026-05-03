@@ -9,6 +9,13 @@ import { cn } from "@/lib/utils";
 export interface SpellCardDisplayProps {
   spell: SpellDef;
   mode: "display";
+  /**
+   * When defined, the card becomes a tap target that calls `onCast` on
+   * click. Used by the sheet's companion-mode wrapper to open the cast
+   * popover. Leave undefined for non-interactive surfaces (printable
+   * sheet, level-up review).
+   */
+  onCast?(): void;
 }
 
 export interface SpellCardPickerProps {
@@ -47,6 +54,22 @@ export function SpellCard(props: SpellCardProps) {
   );
 
   if (props.mode === "display") {
+    if (props.onCast) {
+      const onCast = props.onCast;
+      return (
+        <button
+          type="button"
+          onClick={onCast}
+          className={cn(
+            "rounded-md border border-border p-3 flex gap-2 text-left w-full",
+            "transition-colors cursor-pointer hover:border-ring/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          )}
+          aria-label={`Cast ${spell.name}`}
+        >
+          {inner}
+        </button>
+      );
+    }
     return (
       <div className="rounded-md border border-border p-3 flex gap-2">
         {inner}

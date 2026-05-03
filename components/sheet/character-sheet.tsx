@@ -1,7 +1,10 @@
 "use client";
 
-import type { Character } from "@/lib/character/types";
+import { useState } from "react";
+import type { Character, SpellDef } from "@/lib/character/types";
 import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/types";
+import { spendSlot } from "@/lib/character/live-state";
+import { SpellCastPopover } from "@/components/spells/spell-cast-popover";
 import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
@@ -286,6 +289,8 @@ export function CharacterSheet({
                   text-foreground/60 is washed out on the cream parchment. */}
               <div className="[&_[data-slot=tabs-trigger]]:text-[#5a4d2f] [&_[data-slot=tabs-trigger][data-active]]:text-[#1d1814] [&_[data-slot=tabs-trigger][data-active]]:after:!bg-[#7a1f1f]">
                 <SheetSpellbook
+                  character={c}
+                  onChange={handleChange}
                   cantrips={c.spellPicks.cantrips}
                   spellsKnown={c.spellPicks.spellsKnown}
                 />
@@ -431,12 +436,21 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 function SheetSpellbook({
+  character,
+  onChange,
   cantrips,
   spellsKnown,
 }: {
+  character: Character;
+  onChange(updated: Character): void;
   cantrips: ReadonlyArray<string>;
   spellsKnown: ReadonlyArray<string>;
 }) {
+  // Local state: which spell, if any, has the cast popover open. The popover
+  // owns its preview cast level internally — it just resets when `castSpell`
+  // changes id.
+  const [castSpell, setCastSpell] = useState<SpellDef | null>(null);
+
   // Resolve every known id to its catalog entry (skip unknown ids silently;
   // they may be from a future schema or a typo in seeded data).
   const known = [...cantrips, ...spellsKnown]
@@ -450,5 +464,28 @@ function SheetSpellbook({
     (a, b) => a - b,
   ) as SpellLevel[];
 
-  return <SpellTabs spells={known} levels={levels} mode={{ kind: "display" }} />;
+  return (
+    <>
+      <SpellTabs
+        spells={known}
+        levels={levels}
+        mode={{ kind: "display", onCast: setCastSpell }}
+      />
+      <SpellCastPopover
+        open={castSpell !== null}
+        onOpenChange={(o) => {
+          if (!o) setCastSpell(null);
+        }}
+        spell={castSpell}
+        character={character}
+        onCast={(slotLevel) => {
+          // Spend the slot via the existing live-state primitive, then close
+          // the popover. The mutation propagates via the sheet's onChange
+          // pipeline, which writes to localStorage.
+          onChange(spendSlot(character, slotLevel));
+          setCastSpell(null);
+        }}
+      />
+    </>
+  );
 }

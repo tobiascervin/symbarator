@@ -307,6 +307,69 @@ export interface BurdenDef {
 
 export type SpellLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+/** Damage / healing dice expression. `flat` is an optional flat add (e.g. +5). */
+export interface DiceExpression {
+  count: number;
+  faces: 4 | 6 | 8 | 10 | 12;
+  flat?: number;
+}
+
+export type DamageType =
+  | "acid"
+  | "bludgeoning"
+  | "cold"
+  | "fire"
+  | "force"
+  | "lightning"
+  | "necrotic"
+  | "piercing"
+  | "poison"
+  | "psychic"
+  | "radiant"
+  | "slashing"
+  | "thunder";
+
+export interface DamageRoll {
+  dice: DiceExpression;
+  type: DamageType;
+  /** Adds the spellcasting ability mod to the damage (rare for damage; common for healing). */
+  addSpellMod?: boolean;
+}
+
+/**
+ * Mechanical shape of a spell's effect. The cast popover branches on `kind`
+ * to decide which numbers (attack mod, save DC, healing) to surface.
+ *
+ * `utility` is explicit ("we know this spell has no roll") so the popover can
+ * confidently say "no save, no attack" rather than "we haven't encoded it."
+ * Spells without an `effect` field (the absent case) fall back to a generic
+ * "see description" message.
+ */
+export type SpellEffect =
+  | { kind: "attack"; damage: DamageRoll; onMiss?: "half" | "none" }
+  | {
+      kind: "save";
+      ability: Ability;
+      damage?: DamageRoll;
+      halfOnSave?: boolean;
+      effect?: string;
+    }
+  | { kind: "heal"; dice: DiceExpression; addSpellMod?: boolean }
+  | { kind: "utility" };
+
+/**
+ * How the spell's dice scale.
+ * - `cantrip`: bands array marks the character-level thresholds at which the
+ *   damage upgrades. Compute picks the highest band whose `atLevel <= c.level`.
+ * - `upcast`: adds `perLevel` dice for each slot level above the spell's base.
+ */
+export type SpellScaling =
+  | {
+      kind: "cantrip";
+      bands: ReadonlyArray<{ atLevel: 5 | 11 | 17; dice: DiceExpression }>;
+    }
+  | { kind: "upcast"; perLevel: DiceExpression };
+
 export interface SpellDef {
   id: string;
   name: string;
@@ -315,6 +378,16 @@ export interface SpellDef {
   traditions: SpellTradition[];
   ritual?: boolean;
   description: string;
+  /**
+   * Mechanical effect for the cast popover. Optional — spells without it
+   * render description-only and the popover degrades to "see description".
+   */
+  effect?: SpellEffect;
+  /**
+   * Scaling rules for the spell's dice. Optional — flat-damage spells (rare)
+   * and explicit utility spells have no scaling.
+   */
+  scaling?: SpellScaling;
 }
 
 // ---------------------------------------------------------------------------

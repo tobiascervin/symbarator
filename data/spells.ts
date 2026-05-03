@@ -30,6 +30,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["theurg", "troll-singer", "witch", "wizard"],
     description:
       "Point at a target within 30 ft. While concentrating up to 1 minute, you have advantage on your first attack roll against that target on each of your turns.",
+    effect: { kind: "utility" },
   },
   {
     id: "acid-splash",
@@ -39,6 +40,19 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "theurg", "wizard"],
     description:
       "Hurl a bubble of acid at one or two creatures within 60 ft. (must be within 5 ft. of each other). Dex save or 1d6 acid damage. Scales at higher character levels.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      damage: { dice: { count: 1, faces: 6 }, type: "acid" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 6 } },
+        { atLevel: 11, dice: { count: 3, faces: 6 } },
+        { atLevel: 17, dice: { count: 4, faces: 6 } },
+      ],
+    },
   },
   {
     id: "chill-touch",
@@ -48,6 +62,18 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "witch", "wizard"],
     description:
       "Ranged spell attack at 120 ft. 1d8 necrotic and target can't regain HP until your next turn. Undead also have disadvantage on attack rolls against you.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 1, faces: 8 }, type: "necrotic" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 8 } },
+        { atLevel: 11, dice: { count: 3, faces: 8 } },
+        { atLevel: 17, dice: { count: 4, faces: 8 } },
+      ],
+    },
   },
   {
     id: "dancing-lights",
@@ -57,6 +83,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "wizard"],
     description:
       "Up to 4 torch-sized lights within 120 ft. Bonus action to move them up to 60 ft each. Concentration up to 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "eldritch-blast",
@@ -65,7 +92,19 @@ const CANTRIPS: SpellDef[] = [
     school: "Evocation",
     traditions: ["witch"],
     description:
-      "Ranged spell attack at 120 ft; 1d10 force on hit. Beam count scales with character level (2 at L5, 3 at L11, 4 at L17).",
+      "Ranged spell attack at 120 ft; 1d10 force on hit. Beam count scales with character level (2 at L5, 3 at L11, 4 at L17). Note: each beam is a separate attack roll — the dice shown reflect total damage potential, not a single roll.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 1, faces: 10 }, type: "force" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 10 } },
+        { atLevel: 11, dice: { count: 3, faces: 10 } },
+        { atLevel: 17, dice: { count: 4, faces: 10 } },
+      ],
+    },
   },
   {
     id: "fire-bolt",
@@ -75,6 +114,18 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "theurg", "wizard"],
     description:
       "Ranged spell attack at 120 ft; 1d10 fire on hit. Ignites flammable objects not worn or carried. Scales at higher character levels.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 1, faces: 10 }, type: "fire" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 10 } },
+        { atLevel: 11, dice: { count: 3, faces: 10 } },
+        { atLevel: 17, dice: { count: 4, faces: 10 } },
+      ],
+    },
   },
   {
     id: "guidance",
@@ -84,6 +135,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Touch a willing creature. Once before the spell ends, target adds 1d4 to one ability check. Concentration up to 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "light",
@@ -93,6 +145,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "theurg", "troll-singer", "wizard"],
     description:
       "Touch an object up to 10 lbs.; it sheds bright light in a 20-ft radius and dim light 20 ft beyond for 1 hour. Dex save to avoid if held by a hostile creature.",
+    effect: { kind: "utility" },
   },
   {
     id: "mage-hand",
@@ -102,6 +155,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "witch", "wizard"],
     description:
       "Spectral hand within 30 ft. Manipulate objects, open unlocked doors/containers, carry up to 10 lbs. Lasts 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "mending",
@@ -110,6 +164,7 @@ const CANTRIPS: SpellDef[] = [
     school: "Transmutation",
     traditions: ["sorcerer", "theurg", "troll-singer", "wizard"],
     description: "Repair a single break or tear in an object you touch. Cast time 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "message",
@@ -119,6 +174,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "wizard"],
     description:
       "Whisper a message to a creature within 120 ft you can see. Target can whisper a reply only you hear.",
+    effect: { kind: "utility" },
   },
   {
     id: "minor-illusion",
@@ -128,6 +184,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "witch", "wizard"],
     description:
       "Within 30 ft, create either a sound or a 5-ft cube image. Investigation check vs. spell save DC reveals the illusion. Lasts 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "poison-spray",
@@ -137,6 +194,19 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "witch", "wizard"],
     description:
       "Within 10 ft of one creature; Con save or 1d12 poison damage. Scales at higher character levels.",
+    effect: {
+      kind: "save",
+      ability: "con",
+      damage: { dice: { count: 1, faces: 12 }, type: "poison" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 12 } },
+        { atLevel: 11, dice: { count: 3, faces: 12 } },
+        { atLevel: 17, dice: { count: 4, faces: 12 } },
+      ],
+    },
   },
   {
     id: "prestidigitation",
@@ -146,6 +216,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "witch", "wizard"],
     description:
       "Minor magical trick within 10 ft (clean/soil object, light/snuff a flame, sensory effect, mark). Up to 3 effects active at once. Lasts up to 1 hour.",
+    effect: { kind: "utility" },
   },
   {
     id: "ray-of-frost",
@@ -155,6 +226,18 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "theurg", "wizard"],
     description:
       "Ranged spell attack at 60 ft; 1d8 cold damage and target's speed is reduced by 10 ft until your next turn. Scales at higher character levels.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 1, faces: 8 }, type: "cold" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 8 } },
+        { atLevel: 11, dice: { count: 3, faces: 8 } },
+        { atLevel: 17, dice: { count: 4, faces: 8 } },
+      ],
+    },
   },
   {
     id: "resistance",
@@ -164,6 +247,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Touch a willing creature. Once before the spell ends, target adds 1d4 to one saving throw. Concentration up to 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "sacred-flame",
@@ -173,6 +257,19 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Flame-like radiance within 60 ft. Dex save (no benefit from cover) or 1d8 radiant damage. Scales at higher character levels.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      damage: { dice: { count: 1, faces: 8 }, type: "radiant" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 8 } },
+        { atLevel: 11, dice: { count: 3, faces: 8 } },
+        { atLevel: 17, dice: { count: 4, faces: 8 } },
+      ],
+    },
   },
   {
     id: "shocking-grasp",
@@ -182,6 +279,18 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["sorcerer", "theurg", "wizard"],
     description:
       "Melee spell attack with advantage if target wears metal. 1d8 lightning damage; target can't take reactions until its next turn.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 1, faces: 8 }, type: "lightning" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 8 } },
+        { atLevel: 11, dice: { count: 3, faces: 8 } },
+        { atLevel: 17, dice: { count: 4, faces: 8 } },
+      ],
+    },
   },
   {
     id: "spare-the-dying",
@@ -190,6 +299,7 @@ const CANTRIPS: SpellDef[] = [
     school: "Necromancy",
     traditions: ["theurg"],
     description: "Touch a living creature with 0 HP; it becomes stable.",
+    effect: { kind: "utility" },
   },
   {
     id: "thaumaturgy",
@@ -199,6 +309,7 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Minor wonder within 30 ft (booming voice, flickering flames, tremor, door bang, alter eyes). Up to 3 effects active at once. Lasts up to 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "vicious-mockery",
@@ -208,6 +319,19 @@ const CANTRIPS: SpellDef[] = [
     traditions: ["troll-singer"],
     description:
       "Insult a creature within 60 ft. Wis save or 1d4 psychic damage and disadvantage on its next attack roll before its next turn ends.",
+    effect: {
+      kind: "save",
+      ability: "wis",
+      damage: { dice: { count: 1, faces: 4 }, type: "psychic" },
+    },
+    scaling: {
+      kind: "cantrip",
+      bands: [
+        { atLevel: 5, dice: { count: 2, faces: 4 } },
+        { atLevel: 11, dice: { count: 3, faces: 4 } },
+        { atLevel: 17, dice: { count: 4, faces: 4 } },
+      ],
+    },
   },
 ];
 
@@ -225,6 +349,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Set an audible or mental alarm in a 20-ft cube within 30 ft. Triggered when a Tiny or larger creature enters. Lasts 8 hours.",
+    effect: { kind: "utility" },
   },
   {
     id: "animal-friendship",
@@ -234,6 +359,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["troll-singer"],
     description:
       "Convince a beast within 30 ft you mean no harm. Wis save (auto-fail if Int <4); on fail, charmed for 24 hours.",
+    effect: { kind: "save", ability: "wis", effect: "Charmed for 24 hours on fail." },
   },
   {
     id: "bane",
@@ -243,6 +369,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg", "troll-singer"],
     description:
       "Up to 3 creatures within 30 ft. Cha save or subtract 1d4 from attack rolls and saves for 1 minute. Concentration.",
+    effect: {
+      kind: "save",
+      ability: "cha",
+      effect: "Targets subtract 1d4 from attack rolls and saves for 1 minute (concentration).",
+    },
   },
   {
     id: "black-bolt",
@@ -252,6 +383,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer"],
     description:
       "Hurl a shadowy bolt at one creature within 120 ft. Dex save or restrained by shadowy tentacles. Each end of its turn it may try a Str save to break free; advantage if larger than the caster. Concentration up to 1 minute.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      effect: "Restrained by shadowy tentacles on fail. Str save at end of each turn to break free.",
+    },
   },
   {
     id: "bless",
@@ -261,6 +397,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Bless up to 3 creatures within 30 ft. Each adds 1d4 to attack rolls and saves for 1 minute. Concentration.",
+    effect: { kind: "utility" },
   },
   {
     id: "burning-hands",
@@ -270,6 +407,13 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "wizard"],
     description:
       "15-ft cone from your hands. Each creature in it Dex saves; 3d6 fire damage on a fail, half on success. Ignites flammable objects.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      damage: { dice: { count: 3, faces: 6 }, type: "fire" },
+      halfOnSave: true,
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 6 } },
   },
   {
     id: "charm-person",
@@ -279,6 +423,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "witch", "wizard"],
     description:
       "Target a humanoid within 30 ft. Wis save (advantage if you/allies are fighting it) or charmed for 1 hour, regards you as a friendly acquaintance. Knows it was charmed when the spell ends.",
+    effect: {
+      kind: "save",
+      ability: "wis",
+      effect: "Charmed for 1 hour on fail; regards you as a friendly acquaintance.",
+    },
   },
   {
     id: "command",
@@ -288,6 +437,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Speak a one-word command to a creature within 60 ft that understands you. Wis save or obey on its next turn (approach, drop, flee, grovel, halt). No effect on undead.",
+    effect: {
+      kind: "save",
+      ability: "wis",
+      effect: "Obeys a one-word command on its next turn (approach/drop/flee/grovel/halt).",
+    },
   },
   {
     id: "comprehend-languages",
@@ -298,6 +452,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "For 1 hour you understand the literal meaning of any spoken language you hear and any written language you touch (1 minute per page).",
+    effect: { kind: "utility" },
   },
   {
     id: "create-or-destroy-water",
@@ -307,6 +462,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Create up to 10 gallons of clean water in an open container within 30 ft, OR destroy up to 10 gallons. Alternatively conjure a 30-ft cube of rain or destroy fog.",
+    effect: { kind: "utility" },
   },
   {
     id: "cure-wounds",
@@ -316,6 +472,12 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg", "troll-singer"],
     description:
       "Touch a creature; restore HP equal to 1d8 + spellcasting modifier. No effect on constructs or undead.",
+    effect: {
+      kind: "heal",
+      dice: { count: 1, faces: 8 },
+      addSpellMod: true,
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 8 } },
   },
   {
     id: "detect-evil-and-good",
@@ -325,6 +487,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "For 10 min, sense within 30 ft the presence of aberrations, blight-born, celestials, elementals, fey, fiends, undead, and consecrated/desecrated objects. Concentration. Walls block.",
+    effect: { kind: "utility" },
   },
   {
     id: "detect-magic",
@@ -335,6 +498,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "For 10 min, sense magic within 30 ft. Action to learn each magical aura's school. Concentration. Most barriers block.",
+    effect: { kind: "utility" },
   },
   {
     id: "detect-poison-and-disease",
@@ -345,6 +509,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "For 10 min, sense kind and location of poisons, poisonous creatures, and diseases within 30 ft. Concentration.",
+    effect: { kind: "utility" },
   },
   {
     id: "disguise-self",
@@ -354,6 +519,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "wizard"],
     description:
       "Make yourself appear different (size shift up to ±1 ft) for 1 hour. Investigation check vs. spell save DC reveals.",
+    effect: { kind: "utility" },
   },
   {
     id: "entangle",
@@ -363,6 +529,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["troll-singer", "witch"],
     description:
       "20-ft square of grasping plants within 90 ft. Each creature there Str saves or restrained for 1 minute. Concentration.",
+    effect: {
+      kind: "save",
+      ability: "str",
+      effect: "Restrained for 1 minute on fail. Concentration.",
+    },
   },
   {
     id: "expeditious-retreat",
@@ -372,6 +543,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "witch", "wizard"],
     description:
       "Bonus action: dash. For 10 min, you can take the Dash action as a bonus action each turn. Concentration.",
+    effect: { kind: "utility" },
   },
   {
     id: "faerie-fire",
@@ -381,6 +553,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["troll-singer"],
     description:
       "20-ft cube within 60 ft. Each object/creature outlined in colored light. Dex save or attacks against them have advantage; can't benefit from invisibility. Concentration up to 1 minute.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      effect: "On fail, attacks against the target have advantage and target can't benefit from invisibility. Concentration.",
+    },
   },
   {
     id: "false-life",
@@ -388,7 +565,9 @@ const LEVEL_1: SpellDef[] = [
     level: 1,
     school: "Necromancy",
     traditions: ["sorcerer", "wizard"],
-    description: "Gain 1d4 + 4 temporary HP for 1 hour.",
+    description:
+      "Gain 1d4 + 4 temporary HP for 1 hour. (At higher levels, +5 temp HP per slot above L1 — not modeled in the live dice; check description.)",
+    effect: { kind: "heal", dice: { count: 1, faces: 4, flat: 4 } },
   },
   {
     id: "feather-fall",
@@ -398,6 +577,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "wizard"],
     description:
       "Reaction (when you or a creature within 60 ft falls). Up to 5 falling creatures' descent slows to 60 ft/round; no fall damage. Lasts 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "find-familiar",
@@ -408,6 +588,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "1-hour ritual. Summon a Tiny spirit familiar. It obeys, can deliver touch spells, and acts on your initiative. Telepathic link within 100 ft.",
+    effect: { kind: "utility" },
   },
   {
     id: "floating-disk",
@@ -418,6 +599,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Conjure a 3-ft, slightly concave disk within 30 ft. Holds up to 500 lbs. Follows you within 20 ft. Lasts 1 hour.",
+    effect: { kind: "utility" },
   },
   {
     id: "fog-cloud",
@@ -427,6 +609,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "wizard"],
     description:
       "20-ft radius sphere of fog within 120 ft. Heavy obscurement; lasts up to 1 hour. Concentration.",
+    effect: { kind: "utility" },
   },
   {
     id: "grease",
@@ -436,6 +619,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["wizard"],
     description:
       "10-ft square within 60 ft becomes greasy. Creatures there or entering Dex save or fall prone. Lasts 1 minute.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      effect: "Fall prone on fail. Difficult terrain for 1 minute.",
+    },
   },
   {
     id: "guiding-bolt",
@@ -445,6 +633,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Ranged spell attack at 120 ft; 4d6 radiant on hit. Next attack against the target before end of your next turn has advantage.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 4, faces: 6 }, type: "radiant" },
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 6 } },
   },
   {
     id: "healing-word",
@@ -454,6 +647,12 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg", "troll-singer"],
     description:
       "Bonus action. A creature within 60 ft regains 1d4 + spellcasting modifier HP. No effect on constructs or undead.",
+    effect: {
+      kind: "heal",
+      dice: { count: 1, faces: 4 },
+      addSpellMod: true,
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 4 } },
   },
   {
     id: "hellish-rebuke",
@@ -463,6 +662,13 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["witch"],
     description:
       "Reaction (when a creature within 60 ft damages you). Dex save or 2d10 fire damage, half on success.",
+    effect: {
+      kind: "save",
+      ability: "dex",
+      damage: { dice: { count: 2, faces: 10 }, type: "fire" },
+      halfOnSave: true,
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 10 } },
   },
   {
     id: "heroism",
@@ -472,6 +678,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["troll-singer"],
     description:
       "Touch a willing creature. Immune to fear; gains spellcasting modifier in temp HP at the start of each of its turns. Concentration up to 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "hideous-laughter",
@@ -481,6 +688,11 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["troll-singer", "wizard"],
     description:
       "Target a creature within 30 ft (Int >4). Wis save or fall prone laughing, incapacitated, for the duration. Saves at end of each turn (advantage if it took damage). Concentration up to 1 minute.",
+    effect: {
+      kind: "save",
+      ability: "wis",
+      effect: "Prone, incapacitated, laughing. Saves at end of each turn (advantage if took damage). Concentration.",
+    },
   },
   {
     id: "holy-smoke",
@@ -491,6 +703,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Light incense in a 10-ft cube within 10 ft. The smoke gathers around corrupted creatures and objects; the GM clearly states each creature's Corruption category. Concentration up to 1 minute. Countered by exchange shadow.",
+    effect: { kind: "utility" },
   },
   {
     id: "identify",
@@ -501,6 +714,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "1-minute ritual. Touch one item; learn its magical properties, who attuned, and any spells affecting a creature.",
+    effect: { kind: "utility" },
   },
   {
     id: "illusory-script",
@@ -511,6 +725,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Inscribe text on parchment that appears as something else to all but creatures you designate. Lasts 10 days.",
+    effect: { kind: "utility" },
   },
   {
     id: "inflict-wounds",
@@ -519,6 +734,11 @@ const LEVEL_1: SpellDef[] = [
     school: "Necromancy",
     traditions: ["theurg"],
     description: "Melee spell attack. 3d10 necrotic damage on hit.",
+    effect: {
+      kind: "attack",
+      damage: { dice: { count: 3, faces: 10 }, type: "necrotic" },
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 10 } },
   },
   {
     id: "jump",
@@ -527,6 +747,7 @@ const LEVEL_1: SpellDef[] = [
     school: "Transmutation",
     traditions: ["sorcerer", "wizard"],
     description: "Touch a creature; its jump distance is tripled for 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "longstrider",
@@ -535,6 +756,7 @@ const LEVEL_1: SpellDef[] = [
     school: "Transmutation",
     traditions: ["troll-singer", "wizard"],
     description: "Touch a creature; its speed increases by 10 ft for 1 hour.",
+    effect: { kind: "utility" },
   },
   {
     id: "mage-armor",
@@ -544,6 +766,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "wizard"],
     description:
       "Touch a willing unarmored creature; AC becomes 13 + Dex modifier. Lasts 8 hours; ends if target dons armor.",
+    effect: { kind: "utility" },
   },
   {
     id: "magic-missile",
@@ -552,7 +775,8 @@ const LEVEL_1: SpellDef[] = [
     school: "Evocation",
     traditions: ["sorcerer", "wizard"],
     description:
-      "Three darts of force, each 1d4 + 1, divided among any visible creatures within 120 ft. Auto-hit.",
+      "Three darts of force, each 1d4 + 1, divided among any visible creatures within 120 ft. Auto-hit. (Auto-hit damage isn't modeled in the live dice — see description.)",
+    effect: { kind: "utility" },
   },
   {
     id: "protection-from-evil-and-good",
@@ -562,6 +786,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg", "witch", "wizard"],
     description:
       "Touch a willing creature. Disadvantage on attack rolls against it from aberrations, blight-born, celestials, elementals, fey, fiends, undead. Can't be charmed/frightened/possessed by them. Concentration up to 10 minutes.",
+    effect: { kind: "utility" },
   },
   {
     id: "purify-food-and-drink",
@@ -571,6 +796,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     ritual: true,
     description: "Purify food and drink in a 5-ft radius sphere within 10 ft.",
+    effect: { kind: "utility" },
   },
   {
     id: "sanctuary",
@@ -580,6 +806,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "Bonus action. Ward a creature within 30 ft. Attackers Wis save or must choose a different target. Ends if warded creature attacks or casts a harmful spell. 1 minute.",
+    effect: { kind: "utility" },
   },
   {
     id: "shield",
@@ -589,6 +816,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "wizard"],
     description:
       "Reaction (when hit by an attack or targeted by magic missile). +5 AC and immunity to magic missile until your next turn.",
+    effect: { kind: "utility" },
   },
   {
     id: "shield-of-faith",
@@ -598,6 +826,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["theurg"],
     description:
       "A shimmering field grants a creature within 60 ft +2 AC for 10 minutes. Concentration.",
+    effect: { kind: "utility" },
   },
   {
     id: "silent-image",
@@ -607,6 +836,7 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "wizard"],
     description:
       "15-ft cube illusion within 60 ft. Move it 30 ft as an action. No sound, smell, or temperature. Investigation reveals it. Concentration up to 10 minutes.",
+    effect: { kind: "utility" },
   },
   {
     id: "sleep",
@@ -615,7 +845,8 @@ const LEVEL_1: SpellDef[] = [
     school: "Enchantment",
     traditions: ["troll-singer", "wizard"],
     description:
-      "Roll 5d8; sum is HP affected. Within a 20-ft radius point in 90 ft, creatures fall unconscious in ascending HP order until total is exhausted. 1 minute. Undead and charm-immune unaffected.",
+      "Roll 5d8; sum is HP affected. Within a 20-ft radius point in 90 ft, creatures fall unconscious in ascending HP order until total is exhausted. 1 minute. Undead and charm-immune unaffected. (HP-pool mechanic isn't modeled in the live dice — see description.)",
+    effect: { kind: "utility" },
   },
   {
     id: "speak-with-animals",
@@ -626,6 +857,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Communicate with beasts for 10 minutes. Limited intellect — yes/no and simple impressions.",
+    effect: { kind: "utility" },
   },
   {
     id: "spirit-walk",
@@ -636,6 +868,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "1-minute cast. You enter the spirit world for up to 10 minutes — invisible to material creatures but visible to spirits. Hostile spirits may attack. Reaction to end early.",
+    effect: { kind: "utility" },
   },
   {
     id: "tale-of-ashes",
@@ -646,6 +879,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "A 10-minute ritual on a destroyed object's ashes reveals fragmented images of how it was destroyed. The longer ago, the murkier the vision.",
+    effect: { kind: "utility" },
   },
   {
     id: "thunderwave",
@@ -655,6 +889,14 @@ const LEVEL_1: SpellDef[] = [
     traditions: ["sorcerer", "troll-singer", "wizard"],
     description:
       "15-ft cube from you. Each creature in it Con saves; 2d8 thunder and pushed 10 ft on fail (half/no push on success). Loose objects pushed 10 ft. Audible to 300 ft.",
+    effect: {
+      kind: "save",
+      ability: "con",
+      damage: { dice: { count: 2, faces: 8 }, type: "thunder" },
+      halfOnSave: true,
+      effect: "Pushed 10 ft on fail.",
+    },
+    scaling: { kind: "upcast", perLevel: { count: 1, faces: 8 } },
   },
   {
     id: "unseen-servant",
@@ -665,6 +907,7 @@ const LEVEL_1: SpellDef[] = [
     ritual: true,
     description:
       "Invisible mindless force in 60 ft. AC 10, 1 HP, Str 2. Bonus action to direct it within 60 ft. Lasts 1 hour.",
+    effect: { kind: "utility" },
   },
 ];
 
