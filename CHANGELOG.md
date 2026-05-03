@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-05-03
+
+Optional L1 Boons & Burdens — the wizard now respects RAW Symbaroum (Boons are L4+ feats); a per-character toggle adds the L1 step for tables that allow the house rule. The sheet's Boons, Burdens, and Feats sections render as visually unified cards alongside spells, and the Boon and Burden catalogs are filled out to the PG canon (36 and 16 entries respectively).
+
+### Added
+
+- **House-rules toggle on the abilities step** — a labelled checkbox with explainer that flips `Character.houseRules.allowL1BoonBurden` on or off. Toggling on inserts the Boons & Burdens step into the wizard live (indicator, "Step N of M", and Continue label all update); toggling off with picks already made surfaces a confirmation dialog before clearing `boons`, `burdens`, and `boonAbilityChoices`.
+- **`<FeatCard>` and `<FeatCardGroup>`** in `components/sheet/feat-card.tsx` — a parchment-themed card primitive with name (display font), optional badge row (`+1 INT`-style), and description. Visual structure mirrors `SpellCard` so adjacent sheet sections read as one design language.
+- **Full PG-canon Boons** — the 6 missing entries are now in `data/feats.ts` (Medium, Mirage, Pathfinder with `+1 WIS`, Pet, Servant, Soulmate). Total: **36 boons** (PG p. 147).
+- **Full PG-canon Burdens** — the 4 placeholder entries are replaced by the canonical **16 burdens** (PG p. 151–152): Addiction, Arch Enemy, Bestial, Bloodthirst, Code of Honor, Dark Blood, Dark Secret, Elderly, Impulsive, Nightmares, Mystical Mark, Seizures, Sickly, Slow, Wanted, Ward. Each burden's `+2 to X` (or `+1/+1`) bonus is captured in its description text.
+- **`stepsFor(character)`** in `lib/character/validation.ts` — single source of truth for the active wizard step list. `nextStep` and `prevStep` now accept an optional `character` argument and consult `stepsFor` so step navigation, indicator, and counter all agree.
+- **Deep-link guard** — visiting `/builder/boons-burdens?id=<id>` on a flag-off character redirects to `/builder/abilities?id=<id>` rather than rendering an unreachable step.
+- **6 new E2E tests** covering the RAW skip path, deep-link redirect, toggle insertion, `houseRules` JSON export round-trip, and migrator backfill for both with-boons and without-boons saves. Suite total: **45 tests**, all passing.
+
+### Changed
+
+- **L1 Boons & Burdens step is now opt-in.** RAW Symbaroum 5E grants Boons via the L4+ Boon feat, not at character creation. New characters default to `houseRules.allowL1BoonBurden: false` and the wizard skips the step entirely; only existing characters that previously picked a boon or burden are migrated to `true` so they keep their step. The validator still allows 0–1 boon and 0–1 burden when the flag is on.
+- **Sheet rendering of Boons / Burdens / Feats** now uses the shared `<FeatCard>`. Choice-boons display the chosen ability as a badge (e.g. `+1 CHA`) rather than embedded in the boon name.
+- **Schema** — `Character` gains a required `houseRules: { allowL1BoonBurden: boolean }` namespace, designed for additional rule flags later. `migrateCharacter` backfills the field on first load: `true` if the saved character has any existing boon or burden (preserving prior behavior), otherwise `false`. No persisted save fails to load.
+- **`gotoBuilder` test helper** now accepts `"boons-burdens"` in its step union (it didn't before, despite a test using it).
+
+[1.6.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.6.0
+
 ## [1.5.0] - 2026-05-03
 
 Printable PDF export — a paper-friendly view of any saved character so players who build in the app can carry the build to a tabletop session on a real PG sheet.
