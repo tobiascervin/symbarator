@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-03
+
+Burdens now mechanically count: the +2 (or +1/+1 for Dark Blood) ability bonus from a picked burden flows through `computeFinalAbilities` and shows up on the stat block, saves, and skill modifiers. Choice-burdens (Addiction, Impulsive, Seizures, Ward, Dark Blood) gain inline ability pickers in the wizard, and the sheet renders each burden's bonus as a badge alongside the spell-style boon and feat cards from v1.6.
+
+### Added
+
+- **`BurdenDef.abilityBonus`** as a discriminated union with three shapes: `fixed` (a single named ability gets +2), `choose-one` (player picks one ability — optionally restricted via `from`, defaults to any of six — that gets +2), and `choose-two` (player picks two distinct abilities, each gets +1; the Dark Blood shape). All 16 canonical PG burdens are now encoded with their bonus: 11 fixed (Arch Enemy/Bestial/Bloodthirst/Code of Honor/Dark Secret/Elderly/Mystical Mark/Nightmares/Sickly/Slow/Wanted), 4 choose-one (Addiction any-of-six, Impulsive STR/CHA, Seizures INT/WIS, Ward INT/CHA), and 1 choose-two (Dark Blood +1/+1, plus a `startingCorruption: 2` declaration).
+- **`Character.burdenAbilityChoices: Record<string, ReadonlyArray<Ability>>`** persists choice-burden picks (length 1 for choose-one, length 2 for choose-two; fixed burdens have no entry). The migrator backfills `{}` for any saved character missing the field.
+- **`burdenBonusesFor(c)`** helper in `lib/character/compute.ts` that mirrors `boonBonusesFor` and feeds into the existing `computeFinalAbilities` pipeline as a peer to origin/floating ASI/subchoice ASI/boon bonuses.
+- **Inline ability pickers in the wizard's burden cards** for choice-burdens. `choose-one` is single-select constrained to `abilityBonus.from` (or all six). `choose-two` is toggle-select with a "X of 2 chosen" hint and max-2 enforcement (clicking a third pick replaces the oldest). The validator rejects advance on wrong cardinality, duplicate picks, or out-of-list picks with specific error messages.
+- **Bonus badges on burden cards** in both the wizard picker and the sheet — one badge per `+X ABL` term. A fixed-bonus burden shows `+2 CON`; a choose-one with no pick shows `+2 (choose 1)`, and updates to `+2 STR` once the player picks; a choose-two shows `+1/+1 (choose 2)` until two picks are made, then renders two badges (`+1 STR`, `+1 WIS`).
+- **Dark Blood corruption warning chip** — when Dark Blood is selected in the wizard, a destructive-styled chip appears reading "+2 permanent Corruption — track manually on the sheet's Corruption panel". The +2 is **not** auto-applied to `Character.corruption.permanent` (see Changed below for why).
+- **5 new E2E tests** covering the fixed-bonus stat-block math, the choose-one picker validation flow (Impulsive), the Dark Blood choose-two flow with warning chip + double badges + sheet rendering, and the migrator backfill for an existing fixed-burden character. Suite total: **49 tests** passing. New `reseedCurrent(page, id)` test helper for cases that need a full page navigation after a wizard save.
+
+### Changed
+
+- **Existing burden picks now mechanically contribute their bonus on first load post-upgrade.** Anyone who already took, e.g., Bestial in v1.6 will see `CON +2` appear on their stat block, saves, and skill modifiers when they next open the character. If you had been compensating manually by reducing the base score, you'll want to revisit the abilities step. No data is lost — the migrator backfills `burdenAbilityChoices: {}` for fixed burdens (no entry needed) and the bonus is purely additive.
+- **Burden description text trimmed** in `data/feats.ts` — the `"Bonus: +X to Y. ..."` prose prefix is removed from each description, since the bonus now renders as a badge on the card. The roleplay text remains.
+- **Dark Blood's +2 permanent Corruption is intentionally a manual side-effect.** `Character.corruption.permanent` is a player-mutable field tracked in play (the Corruption panel adjusts it during sessions); auto-incrementing on burden pick and decrementing on unpick would corrupt that signal if the player has touched it between events. The wizard surfaces a clear warning chip; the player applies the +2 via the existing Corruption `+`/`−` adjusters.
+
+[1.7.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.7.0
+
 ## [1.6.0] - 2026-05-03
 
 Optional L1 Boons & Burdens — the wizard now respects RAW Symbaroum (Boons are L4+ feats); a per-character toggle adds the L1 step for tables that allow the house rule. The sheet's Boons, Burdens, and Feats sections render as visually unified cards alongside spells, and the Boon and Burden catalogs are filled out to the PG canon (36 and 16 entries respectively).
