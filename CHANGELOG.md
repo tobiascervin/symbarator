@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-05-04
+
+Templar approach now grants the *bless* spell automatically, on top of the player's L1 spell picks (PG p. 143: "you learn 2 cantrips and 1 first-level spell from the Theurg tradition list, plus the bless spell"). Adds a generic `alwaysKnownSpells` list to `ApproachSpellcasting` so any approach can grant fixed spells without burning the player's choice budget — Templar declares `["bless"]` today, the door is open for future approaches with no further schema work. Granted spells surface as a read-only "Always known" section in the wizard, render with a "Granted" badge in the sheet's spellbook, and route through the existing cast popover with no extra plumbing. The wizard's cantrip picker also gains the same collapsible header treatment that the 1st-level picker got in v1.11.
+
+### Added
+
+- **`ApproachSpellcasting.alwaysKnownSpells?: ReadonlyArray<string>`** — an optional list of spell ids the approach grants automatically, in addition to (not instead of) the player-chosen `cantripsKnownAt1` / `spellsKnownAt1`. The Templar declares `["bless"]`. Approaches that don't grant any always-known spells leave the field undefined.
+- **`computeSpellcasting(c).grantedSpells: ReadonlyArray<string>`** — the new field returns whatever the approach declared (or `[]` when undefined). Sheet rendering, printable rendering, and any future caller can look up the granted set without re-reading the approach themselves.
+- **Module-load sanity check** in `data/classes.ts` walks every approach's `alwaysKnownSpells` and asserts each id resolves in `SPELL_BY_ID` — throws in dev, `console.error`s in prod, parity with the surrounding level-table assertions. A typo like `"bles"` is caught the moment the data file loads.
+- **Read-only "Always known (granted by your approach)" section** in `components/builder/approach-step.tsx` — listed above the cantrip / 1st-level pickers when the approach declares granted spells. Each entry is a non-interactive card with the spell's name, school, and description, plus a dashed-border treatment so it reads visually distinct from the pickable options.
+- **"Granted" badge on the sheet's spellbook** — the bless card in the Templar's 1st-level section now shows a primary-fill `Granted` badge alongside the existing school / ritual badges so the player can tell at a glance which spells they cannot swap. Plumbed via a new optional `granted?: boolean` on `SpellCard`'s display variant and `grantedSpellIds?: ReadonlySet<string>` on `SpellTabsMode.display`.
+- **`e2e/templar-bless.spec.ts`** with 7 tests: sheet shows Bless with the Granted badge even when the player picks a different 1st-level spell, granted Bless casts through the standard popover, `computeSpellcasting` exposes `grantedSpells: ["bless"]` at every level L1–L20, `TEMPLAR_SPELLCASTING.alwaysKnownSpells` resolves in the catalog, `validateStep("approach")` accepts a Templar with non-bless picks, the wizard's approach step hides Bless from the picker pool while listing it in the Always-known section, and the cantrip picker renders as a collapsible section. Suite total: **82 passing**.
+
+### Changed
+
+- **`<SpellTabs>` display mode** accepts an optional `grantedSpellIds: ReadonlySet<string>` — when present, matching cards render the "Granted" badge. Picker mode is unaffected.
+- **Sheet spellbook merge** in `components/sheet/character-sheet.tsx#SheetSpellbook` and `components/sheet/printable-sheet.tsx#SpellList` now de-dupes the resolved spell ids via `new Set([...cantrips, ...spellsKnown, ...grantedSpells])` so a save that happens to also list a granted id in `spellPicks.spellsKnown` doesn't render the same card twice.
+- **Spellcraft section visibility gate** widens to render whenever the character has any picks *or* any granted spells, so a fresh Templar with empty `spellPicks` (until the wizard finishes) still shows the Spellbook with bless on the sheet.
+- **Wizard cantrip picker** in `components/builder/approach-step.tsx` is now `<SpellTabs levels={[0]} mode="picker">` instead of a hand-rolled `<Label>`/`<Checkbox>` grid. It picks up the same collapsible header (with total-count + selected-count badges) the 1st-level picker uses. Behavior is unchanged — same `cantripsKnownAt1` cap, same toggle handler — but the layout is consistent across both pickers.
+- **Picker pools filter granted spells out** — `cantripOptions` and `spellOptions` in the wizard's approach step now `.filter(s => !grantedSet.has(s.id))`, so granted spells can't appear as a pickable checkbox. Bless still shows in the read-only "Always known" section above the pickers.
+
+### Notes
+
+- **No `Character` schema change.** Granted spells are derived from the approach, never persisted to `c.spellPicks`. Existing characters automatically gain bless on next render — no migration. The L1 spell-pick validator in `lib/character/validation.ts` is unchanged: it inspects `c.spellPicks.cantrips.length` and `c.spellPicks.spellsKnown.length`, both unaffected by grants.
+- **Granted spells are intentionally not blocked at level-up.** A fresh Templar at L3 *could* still pick bless from the new-spells pool (the level-up validator's "already known" set tracks `c.spellPicks.spellsKnown` only). Visual signal — the "Granted" badge — is the chosen mitigation per the design doc; future-tracked as a follow-up if it bites a player in practice.
+- **Higher-tier always-known spells (e.g. oath spells unlocked at L3/L5) are out of scope.** Today's flat per-approach list is forward-compatible: when that need arises, evolve `alwaysKnownSpells` to `ReadonlyArray<{ spellId: string; minLevel?: number }>` without touching call sites.
+
+[1.12.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.12.0
+
 ## [1.11.0] - 2026-05-04
 
 Collapsible spell-level sections in the shared spell picker. The per-level tab strip in `<SpellTabs>` is replaced with one collapsible section per level — Cantrips, 1st, 2nd, … — all expanded by default so the player sees the full accessible catalog at once. Click a header to collapse just that section; siblings stay open. In picker mode each header shows a "selected" badge counting the player's picks at that level, so a player can collapse a level they've finished picking from without losing context. Affects all three call sites (Approach step, Level-Up dialog, companion sheet) without changing their source — the public `<SpellTabs>` API is unchanged.
