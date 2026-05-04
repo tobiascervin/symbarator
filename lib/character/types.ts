@@ -327,15 +327,59 @@ export type SpellTradition =
   | "staff-mage"
   | "symbolist";
 
-export interface BoonDef {
+/**
+ * Three kinds of feat per PG p. 146:
+ * - `"boon"` — generic, origin/class-agnostic. Anyone can take.
+ * - `"origin"` — tied to one or more origins (PG p. 153).
+ * - `"class"` — tied to a class (and sometimes an approach + class-level
+ *   floor + ability prerequisites) per PG p. 155–157.
+ */
+export type FeatCategory = "boon" | "origin" | "class";
+
+/**
+ * Unified shape for boons, origin feats, and class feats. Discriminated by
+ * `category`. Boon entries leave the gating fields (`origins`, `classId`,
+ * `approachId`, …) undefined; origin entries set `origins`; class entries
+ * set `classId` and optionally any of the prerequisite fields.
+ */
+export interface FeatDef {
   id: string;
+  category: FeatCategory;
   name: string;
   description: string;
+  /** +1 ability for boons; +1 STR for Big-boned (Ogre origin feat); etc. */
   abilityBonus?: { ability: Ability | "choice"; amount: 1 };
-  abilityBonusChoices?: Ability[]; // when ability is "choice"
-  prerequisite?: string;
+  /** When `abilityBonus.ability === "choice"`, the player picks from this list. */
+  abilityBonusChoices?: ReadonlyArray<Ability>;
+  /** Free-form prerequisite text (PG wording, e.g. "Strength 13 or higher"). */
+  prerequisiteText?: string;
+  /** Origin feats: which origins MAY take this feat (PG p. 153). */
+  origins?: ReadonlyArray<string>;
+  /** Class feats: the parent class (PG p. 155–157). */
+  classId?: string;
+  /** Class feats with an approach-tied prerequisite (e.g. Confessor → Theurg). */
+  approachId?: string;
+  /** Class feats with a minimum class-level requirement (e.g. Confessor → 11+). */
+  minClassLevel?: number;
+  /** Ability-score floors enforced at level-up time (e.g. {str: 13} for Grappler). */
+  minAbilityScores?: Partial<Record<Ability, number>>;
+  /** "Spellcasting ability score 13+" — resolved against `spellcasting.abilityHint`. */
+  minSpellcastingAbility?: number;
+  /** Mutually-exclusive feats (PG p. 156: Confessor ↔ Inquisitor). */
+  excludesFeatIds?: ReadonlyArray<string>;
+  /** Hard restriction independent of prerequisites (Dwarves cannot take Absolute Memory). */
+  forbiddenOriginIds?: ReadonlyArray<string>;
+  /** Legacy alias kept on the type for backwards-source-compat in the L1 step's
+   *  card label. The `restriction` text is now equivalent to `prerequisiteText`
+   *  for boons; both fields render in the same slot. New entries SHOULD use
+   *  `prerequisiteText`. */
   restriction?: string;
+  /** @deprecated Legacy field — use `prerequisiteText`. Kept for back-compat. */
+  prerequisite?: string;
 }
+
+/** @deprecated Use `FeatDef`. Retained as an alias for source compatibility. */
+export type BoonDef = FeatDef & { category: "boon" };
 
 /**
  * Ability bonus shape for a Burden. Three kinds:

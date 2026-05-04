@@ -74,27 +74,38 @@ test.describe("Level-up dialog", () => {
 
     await page.getByRole("button", { name: /Level Up/i }).click();
     await page.getByRole("radio", { name: /^Feat/ }).check();
-    // Default selection is the first boon — keep it.
+    // Pick the first boon by name from the Boons card grid.
+    await page
+      .locator('[data-feat-section="boons"] [role="button"]')
+      .first()
+      .click();
     await page.getByRole("button", { name: /Confirm Level/i }).click();
 
     const after = await readCharacter(page, id);
     expect(after?.feats?.length).toBe(1);
   });
 
-  test("Changeling sees Change Self as a third option", async ({ page }) => {
+  test("Changeling sees Change Self in the Origin Feats section", async ({ page }) => {
     const id = await seedCharacter(page, changelingAtL3);
     await gotoSheet(page, id);
 
     await page.getByRole("button", { name: /Level Up/i }).click();
-    await expect(page.getByRole("radio", { name: /Change Self/i })).toBeVisible();
+    await page.getByRole("radio", { name: /^Feat/ }).check();
+    // Change Self is now an Origin Feats card, not a third radio.
+    await expect(page.getByRole("radio", { name: /Change Self/i })).toHaveCount(0);
+    const card = page.locator(
+      '[data-feat-section="origin-feats"] [data-feat-id="change-self"]',
+    );
+    await expect(card).toBeVisible();
   });
 
-  test("non-Changeling has no Change Self option", async ({ page }) => {
+  test("non-Changeling has no Change Self option in any section", async ({ page }) => {
     const id = await seedCharacter(page, humanWarriorAtL3);
     await gotoSheet(page, id);
 
     await page.getByRole("button", { name: /Level Up/i }).click();
-    await expect(page.getByRole("radio", { name: /Change Self/i })).toHaveCount(0);
+    await page.getByRole("radio", { name: /^Feat/ }).check();
+    await expect(page.locator('[data-feat-id="change-self"]')).toHaveCount(0);
   });
 
   test("Change Self consumes the slot — no ASI, feat = ['change-self']", async ({ page }) => {
@@ -102,7 +113,10 @@ test.describe("Level-up dialog", () => {
     await gotoSheet(page, id);
 
     await page.getByRole("button", { name: /Level Up/i }).click();
-    await page.getByRole("radio", { name: /Change Self/i }).check();
+    await page.getByRole("radio", { name: /^Feat/ }).check();
+    await page
+      .locator('[data-feat-section="origin-feats"] [data-feat-id="change-self"]')
+      .click();
     await page.getByRole("button", { name: /Confirm Level/i }).click();
 
     const after = await readCharacter(page, id);

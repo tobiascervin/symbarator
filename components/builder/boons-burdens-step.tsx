@@ -3,7 +3,6 @@
 import type { Ability } from "@/lib/character/types";
 import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/types";
 import { BOONS, BURDENS } from "@/data/feats";
-import { BOON_FORBIDDEN_ORIGINS } from "@/lib/character/validation";
 import {
   Card,
   CardContent,
@@ -14,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FeatPickCard } from "@/components/feats/feat-pick-card";
 import type { DraftState } from "./use-draft";
 
 export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
@@ -109,78 +109,18 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {BOONS.map((b) => {
             const isSelected = draft.boons.includes(b.id);
-            const forbidden =
-              BOON_FORBIDDEN_ORIGINS[b.id]?.includes(draft.originId) ?? false;
+            const forbidden = b.forbiddenOriginIds?.includes(draft.originId) ?? false;
             return (
-              <Card
+              <FeatPickCard
                 key={b.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => !forbidden && selectBoon(b.id)}
-                onKeyDown={(e) => {
-                  if ((e.key === "Enter" || e.key === " ") && !forbidden) {
-                    e.preventDefault();
-                    selectBoon(b.id);
-                  }
-                }}
-                className={cn(
-                  "transition-colors",
-                  forbidden
-                    ? "opacity-50 cursor-not-allowed border-dashed"
-                    : "cursor-pointer hover:border-ring/60",
-                  isSelected && "border-primary ring-2 ring-primary/40",
-                )}
-                aria-disabled={forbidden}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <CardTitle className="font-display text-lg">{b.name}</CardTitle>
-                    {b.abilityBonus && (
-                      <Badge variant="outline" className="font-display text-[10px] tracking-widest uppercase">
-                        {b.abilityBonus.ability === "choice"
-                          ? "+1 choice"
-                          : `+1 ${b.abilityBonus.ability.toUpperCase()}`}
-                      </Badge>
-                    )}
-                  </div>
-                  <CardDescription className="text-xs leading-snug">
-                    {b.description}
-                  </CardDescription>
-                </CardHeader>
-                {b.restriction && (
-                  <CardContent className="pt-0">
-                    <p className="text-[11px] italic text-muted-foreground">
-                      Restriction: {b.restriction}
-                    </p>
-                  </CardContent>
-                )}
-                {isSelected && b.abilityBonus?.ability === "choice" && (
-                  <CardContent className="pt-0">
-                    <p className="font-display tracking-wide text-xs uppercase text-muted-foreground mb-2">
-                      Pick the ability
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(b.abilityBonusChoices ?? ABILITY_ORDER).map((ab) => {
-                        const active = draft.boonAbilityChoices[b.id] === ab;
-                        return (
-                          <Button
-                            key={ab}
-                            type="button"
-                            size="sm"
-                            variant={active ? "default" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              pickBoonAbility(b.id, ab);
-                            }}
-                          >
-                            {ABILITY_LABELS[ab]}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
+                feat={b}
+                selected={isSelected}
+                disabled={forbidden}
+                disabledReason={forbidden ? "Already part of your origin." : undefined}
+                onSelect={() => selectBoon(b.id)}
+                pickedAbility={draft.boonAbilityChoices[b.id]}
+                onPickAbility={(ab) => pickBoonAbility(b.id, ab)}
+              />
             );
           })}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BOON_BY_ID } from "@/data/feats";
+import { FEAT_BY_ID } from "@/data/feats";
 import { FeatCard, FeatCardGroup, type FeatCardBadge } from "./feat-card";
 
 export interface ResolvedEntry {
@@ -39,17 +39,11 @@ export function FeatList({ feats, onTap }: FeatListProps) {
   if (feats.length === 0) return null;
 
   const fromBoons: ResolvedEntry[] = [];
+  const fromOrigin: ResolvedEntry[] = [];
+  const fromClass: ResolvedEntry[] = [];
   const special: ResolvedEntry[] = [];
 
   for (const id of feats) {
-    if (id === "change-self") {
-      special.push({
-        id,
-        name: "Change Self",
-        description: "Changeling shapeshifting feat (PG p. 51). Consumes the ASI/feat slot it was taken in place of.",
-      });
-      continue;
-    }
     if (id.startsWith("fighting-style:")) {
       const styleId = id.slice("fighting-style:".length);
       const label = FIGHTING_STYLE_LABELS[styleId] ?? styleId;
@@ -60,22 +54,35 @@ export function FeatList({ feats, onTap }: FeatListProps) {
       });
       continue;
     }
-    const boon = BOON_BY_ID[id];
-    if (boon) {
-      fromBoons.push({ id, name: boon.name, description: boon.description });
-    } else {
+    const feat = FEAT_BY_ID[id];
+    if (!feat) {
       special.push({
         id,
         name: id,
         description: "No description available — unknown feat id.",
       });
+      continue;
     }
+    const entry: ResolvedEntry = {
+      id,
+      name: feat.name,
+      description: feat.description,
+    };
+    if (feat.category === "boon") fromBoons.push(entry);
+    else if (feat.category === "origin") fromOrigin.push(entry);
+    else fromClass.push(entry);
   }
 
   return (
     <div className="space-y-4 text-[#1d1814]">
       {fromBoons.length > 0 && (
         <FeatGroup title="From the Boon list" entries={fromBoons} onTap={onTap} />
+      )}
+      {fromOrigin.length > 0 && (
+        <FeatGroup title="Origin Feats" entries={fromOrigin} onTap={onTap} />
+      )}
+      {fromClass.length > 0 && (
+        <FeatGroup title="Class Feats" entries={fromClass} onTap={onTap} />
       )}
       {special.length > 0 && (
         <FeatGroup title="Special" entries={special} muted onTap={onTap} />

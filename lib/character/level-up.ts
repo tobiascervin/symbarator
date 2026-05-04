@@ -12,11 +12,13 @@ import type {
   CharacterLevel,
   ClassDef,
   ClassLevelEntry,
+  FeatDef,
   FightingStyleId,
   LevelChoice,
 } from "./types";
 import { ABILITY_ORDER, MAX_CHARACTER_LEVEL } from "./types";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
+import { FEAT_BY_ID } from "@/data/feats";
 import { averageHpGain, computeHp } from "./compute";
 
 // ---------------------------------------------------------------------------
@@ -35,8 +37,7 @@ export type LevelChoiceAnswer =
       kind: "asi-or-feat";
       pick:
         | { type: "asi"; allocation: Partial<Record<Ability, number>> } // sums to 2
-        | { type: "feat"; featId: string }
-        | { type: "change-self" }; // Changeling-only
+        | { type: "feat"; featId: string };
     }
   | { kind: "fighting-style"; styleId: FightingStyleId }
   | {
@@ -124,6 +125,102 @@ export function requiredChoices(c: Character, target: CharacterLevel): LevelChoi
 }
 
 // ---------------------------------------------------------------------------
+// Feat availability — single source of truth for both UI gating and validator
+// ---------------------------------------------------------------------------
+
+const ABILITY_FULL_NAME: Record<Ability, string> = {
+  str: "Strength",
+  dex: "Dexterity",
+  con: "Constitution",
+  int: "Intelligence",
+  wis: "Wisdom",
+  cha: "Charisma",
+};
+
+export type FeatAvailability =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+/**
+ * Resolves whether `feat` is currently available to `c`. Returns a
+ * user-facing reason on rejection. The level-up dialog uses this to render
+ * disabled cards with their reason; `validateChoiceAnswer` uses it to gate
+ * persistence so the two cannot drift.
+ *
+ * Ability gates consult `c.abilities` *as-is* — gates do not consume any
+ * pending in-step ASI gain (PG p. 146: "you must already meet the
+ * prerequisite"). Class-level gates compare against `c.level`, the
+ * pre-level-up level, which is what the design specs.
+ */
+export function featAvailability(c: Character, feat: FeatDef): FeatAvailability {
+  if (c.feats.includes(feat.id)) {
+    return { ok: false, reason: "Already taken" };
+  }
+  if (feat.forbiddenOriginIds?.includes(c.originId)) {
+    return {
+      ok: false,
+      reason: `${feat.name} is forbidden for ${c.originId} origin.`,
+    };
+  }
+  if (feat.origins && !feat.origins.includes(c.originId)) {
+    const list = feat.origins.join("/");
+    return {
+      ok: false,
+      reason: `${feat.name} is for ${list} characters only.`,
+    };
+  }
+  if (feat.classId && feat.classId !== c.classId) {
+    return { ok: false, reason: `${feat.name} is a ${feat.classId} feat.` };
+  }
+  if (feat.approachId && feat.approachId !== c.approachId) {
+    return {
+      ok: false,
+      reason: `${feat.name} requires the ${feat.approachId} approach.`,
+    };
+  }
+  if (feat.minClassLevel !== undefined && c.level < feat.minClassLevel) {
+    return {
+      ok: false,
+      reason: `Requires class level ${feat.minClassLevel}`,
+    };
+  }
+  if (feat.minAbilityScores) {
+    for (const [ab, min] of Object.entries(feat.minAbilityScores) as Array<
+      [Ability, number]
+    >) {
+      const have = c.abilities[ab] ?? 0;
+      if (have < min) {
+        return {
+          ok: false,
+          reason: `Requires ${ABILITY_FULL_NAME[ab]} ${min} — you have ${have}`,
+        };
+      }
+    }
+  }
+  if (feat.minSpellcastingAbility !== undefined) {
+    const hint = approachById(c.approachId)?.spellcasting?.abilityHint;
+    const have = hint ? (c.abilities[hint] ?? 0) : 0;
+    if (!hint || have < feat.minSpellcastingAbility) {
+      return {
+        ok: false,
+        reason: `Requires spellcasting ability score ${feat.minSpellcastingAbility}+`,
+      };
+    }
+  }
+  if (feat.excludesFeatIds?.some((id) => c.feats.includes(id))) {
+    const conflicts = feat.excludesFeatIds
+      .filter((id) => c.feats.includes(id))
+      .map((id) => FEAT_BY_ID[id]?.name ?? id)
+      .join(", ");
+    return {
+      ok: false,
+      reason: `Cannot be combined with ${conflicts}`,
+    };
+  }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
 
@@ -185,11 +282,11 @@ function validateChoiceAnswer(
       }
       if (pick.type === "feat") {
         if (!pick.featId) return "Pick a feat.";
+        const feat = FEAT_BY_ID[pick.featId];
+        if (!feat) return `Unknown feat: ${pick.featId}.`;
+        const avail = featAvailability(c, feat);
+        if (!avail.ok) return avail.reason;
         return null;
-      }
-      // change-self
-      if (c.originId !== "changeling") {
-        return "Only Changeling characters may take Change Self.";
       }
       return null;
     }
@@ -306,11 +403,10 @@ function applyChoiceAnswer(
         for (const a of ABILITY_ORDER) {
           c.abilities[a] += pick.allocation[a] ?? 0;
         }
-      } else if (pick.type === "feat") {
-        c.feats.push(pick.featId);
       } else {
-        // change-self consumes the slot but registers a sentinel feat id.
-        c.feats.push("change-self");
+        // pick.type === "feat" — every category (boon / origin / class) lands
+        // here. Change Self is just `featId: "change-self"` after this change.
+        c.feats.push(pick.featId);
       }
       return;
     }

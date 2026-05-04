@@ -15,7 +15,7 @@ import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { SKILL_BY_ID } from "@/data/skills";
 import { SPELL_BY_ID } from "@/data/spells";
-import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
+import { BOON_BY_ID, BURDEN_BY_ID, FEAT_BY_ID } from "@/data/feats";
 import {
   computeArmorClass,
   computeFinalAbilities,
@@ -271,15 +271,6 @@ export function PrintableSheet({ character: c }: { character: Character }) {
         <Section heading="Feats" avoidBreak>
           <ul className="text-sm space-y-1.5">
             {c.feats.map((id) => {
-              if (id === "change-self") {
-                return (
-                  <CardLI
-                    key={id}
-                    name="Change Self"
-                    description="Changeling shapeshifting feat (PG p. 51). Consumes the ASI/feat slot it was taken in place of."
-                  />
-                );
-              }
               if (id.startsWith("fighting-style:")) {
                 const styleId = id.slice("fighting-style:".length);
                 return (
@@ -290,12 +281,12 @@ export function PrintableSheet({ character: c }: { character: Character }) {
                   />
                 );
               }
-              const boon = BOON_BY_ID[id];
+              const feat = FEAT_BY_ID[id];
               return (
                 <CardLI
                   key={id}
-                  name={boon?.name ?? id}
-                  description={boon?.description ?? "No description available — unknown feat id."}
+                  name={feat?.name ?? id}
+                  description={feat?.description ?? "No description available — unknown feat id."}
                 />
               );
             })}

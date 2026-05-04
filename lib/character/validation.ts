@@ -36,16 +36,9 @@ export const STEP_LABELS: Record<Step, string> = {
   identity: "Identity",
 };
 
-/**
- * Hand-coded origin restrictions for boons whose PG `restriction` text
- * names a specific origin (e.g. "Dwarves cannot take this — already part
- * of their origin"). Boons not in this map have no machine-checkable
- * restriction; their `restriction` text is shown as informational only.
- */
-export const BOON_FORBIDDEN_ORIGINS: Record<string, ReadonlyArray<string>> = {
-  "absolute-memory": ["dwarf"],
-  "beast-tongue": ["goblin"],
-};
+// Boon origin restrictions used to live in a hand-coded map here. They now
+// live on the catalog as `FeatDef.forbiddenOriginIds` (single source of
+// truth) — the L1 boons step and this validator both read it directly.
 
 /**
  * The active step list for a given character. Currently filters out
@@ -159,10 +152,9 @@ export function validateStep(step: Step, c: Character): string | null {
       for (const id of c.boons) {
         const boon = BOON_BY_ID[id];
         if (!boon) return `Unknown boon: ${id}.`;
-        // Origin restriction (hand-coded subset).
-        const forbidden = BOON_FORBIDDEN_ORIGINS[id];
-        if (forbidden && forbidden.includes(c.originId)) {
-          return `${boon.name}: ${boon.restriction ?? "not allowed for your origin."}`;
+        // Origin restriction now lives on the catalog (`forbiddenOriginIds`).
+        if (boon.forbiddenOriginIds?.includes(c.originId)) {
+          return `${boon.name}: ${boon.restriction ?? boon.prerequisiteText ?? "not allowed for your origin."}`;
         }
         // Choice-boon must have a chosen ability.
         if (boon.abilityBonus?.ability === "choice") {

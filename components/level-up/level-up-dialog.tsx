@@ -12,6 +12,7 @@ import { ABILITY_ORDER, ABILITY_SHORT, MAX_CHARACTER_LEVEL } from "@/lib/charact
 import {
   applyLevelUp,
   averageHpGain,
+  featAvailability,
   requiredChoices,
   validateLevelUp,
   type LevelChoiceAnswer,
@@ -19,7 +20,8 @@ import {
 } from "@/lib/character/level-up";
 import { computeFinalAbilities, computeProficiencyBonus, formatMod } from "@/lib/character/compute";
 import { approachById, CLASS_BY_ID } from "@/data/classes";
-import { BOONS } from "@/data/feats";
+import { FEAT_BY_ID, FEATS } from "@/data/feats";
+import { FeatPickCard } from "@/components/feats/feat-pick-card";
 import { spellsForTradition } from "@/data/spells";
 import {
   Dialog,
@@ -244,40 +246,66 @@ function AsiOrFeatStep({
   answer: Extract<LevelChoiceAnswer, { kind: "asi-or-feat" }>;
   onChange(a: LevelChoiceAnswer): void;
 }) {
-  const isChangeling = character.originId === "changeling";
   const pick = answer.pick;
 
-  function setMode(mode: "asi" | "feat" | "change-self") {
-    if (mode === "asi") {
-      onChange({ kind: "asi-or-feat", pick: { type: "asi", allocation: {} } });
-    } else if (mode === "feat") {
-      onChange({ kind: "asi-or-feat", pick: { type: "feat", featId: BOONS[0]?.id ?? "" } });
-    } else {
-      onChange({ kind: "asi-or-feat", pick: { type: "change-self" } });
-    }
+  // Sectioned visible feats. Boons hide entries forbidden for this origin
+  // (the L1 step shows them as disabled cards; here we omit because they're
+  // structurally unavailable). Origin and class sections only contain
+  // matching catalog entries.
+  const boons = useMemo(
+    () =>
+      FEATS.filter(
+        (f) =>
+          f.category === "boon" &&
+          !(f.forbiddenOriginIds?.includes(character.originId) ?? false),
+      ),
+    [character.originId],
+  );
+  const originFeats = useMemo(
+    () =>
+      FEATS.filter(
+        (f) =>
+          f.category === "origin" &&
+          (f.origins?.includes(character.originId) ?? false),
+      ),
+    [character.originId],
+  );
+  const classFeats = useMemo(
+    () =>
+      FEATS.filter(
+        (f) =>
+          f.category === "class" &&
+          f.classId === character.classId &&
+          (!f.approachId || f.approachId === character.approachId),
+      ),
+    [character.classId, character.approachId],
+  );
+
+  function setAsi() {
+    onChange({ kind: "asi-or-feat", pick: { type: "asi", allocation: {} } });
+  }
+  function setFeat(featId: string) {
+    onChange({ kind: "asi-or-feat", pick: { type: "feat", featId } });
+  }
+  function clearFeat() {
+    onChange({ kind: "asi-or-feat", pick: { type: "feat", featId: "" } });
   }
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-4">
       <h3 className="font-display text-base">Ability Score Improvement or Feat</h3>
-      <RadioGroup value={pick.type} onValueChange={(v) => setMode(v as "asi" | "feat" | "change-self")}>
+      <RadioGroup
+        value={pick.type}
+        onValueChange={(v) => (v === "asi" ? setAsi() : clearFeat())}
+      >
         <Label className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:border-ring/60">
           <RadioGroupItem value="asi" />
           <span className="font-display">Ability Score Improvement (+2 to one or +1/+1 to two)</span>
         </Label>
         <Label className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:border-ring/60">
           <RadioGroupItem value="feat" />
-          <span className="font-display">Feat (Boon) from the catalog</span>
+          <span className="font-display">Feat from the catalog</span>
         </Label>
-        {isChangeling && (
-          <Label className="flex items-center gap-3 rounded-md border p-3 cursor-pointer hover:border-ring/60">
-            <RadioGroupItem value="change-self" />
-            <span>
-              <span className="font-display block">Change Self</span>
-              <span className="text-xs text-muted-foreground">Changeling-only. Consumes this slot.</span>
-            </span>
-          </Label>
-        )}
       </RadioGroup>
 
       {pick.type === "asi" && (
@@ -288,24 +316,70 @@ function AsiOrFeatStep({
       )}
 
       {pick.type === "feat" && (
-        <Select
-          value={pick.featId}
-          onValueChange={(featId) =>
-            onChange({ kind: "asi-or-feat", pick: { type: "feat", featId: featId ?? "" } })
-          }
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Pick a feat" />
-          </SelectTrigger>
-          <SelectContent>
-            {BOONS.map((b) => (
-              <SelectItem key={b.id} value={b.id}>
-                {b.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="space-y-5" data-testid="feat-picker">
+          <FeatSection
+            title="Boons"
+            feats={boons}
+            character={character}
+            selectedId={pick.featId}
+            onSelect={(id) => (id === pick.featId ? clearFeat() : setFeat(id))}
+          />
+          <FeatSection
+            title="Origin Feats"
+            feats={originFeats}
+            character={character}
+            selectedId={pick.featId}
+            onSelect={(id) => (id === pick.featId ? clearFeat() : setFeat(id))}
+          />
+          <FeatSection
+            title="Class Feats"
+            feats={classFeats}
+            character={character}
+            selectedId={pick.featId}
+            onSelect={(id) => (id === pick.featId ? clearFeat() : setFeat(id))}
+          />
+        </div>
       )}
+    </section>
+  );
+}
+
+function FeatSection({
+  title,
+  feats,
+  character,
+  selectedId,
+  onSelect,
+}: {
+  title: string;
+  feats: ReadonlyArray<import("@/lib/character/types").FeatDef>;
+  character: Character;
+  selectedId: string;
+  onSelect(id: string): void;
+}) {
+  if (feats.length === 0) return null;
+  return (
+    <section className="space-y-2" data-feat-section={title.toLowerCase().replace(/ /g, "-")}>
+      <h4 className="font-display text-sm tracking-wider uppercase text-muted-foreground">
+        {title}
+      </h4>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {feats.map((feat) => {
+          const avail = featAvailability(character, feat);
+          const disabled = !avail.ok;
+          const reason = avail.ok ? undefined : avail.reason;
+          return (
+            <FeatPickCard
+              key={feat.id}
+              feat={feat}
+              selected={selectedId === feat.id}
+              disabled={disabled}
+              disabledReason={reason}
+              onSelect={() => onSelect(feat.id)}
+            />
+          );
+        })}
+      </div>
     </section>
   );
 }
@@ -584,9 +658,8 @@ function ConfirmDiff({
   const asiAnswer = answers.find((a) => a.kind === "asi-or-feat");
   const asiPick = asiAnswer?.kind === "asi-or-feat" ? asiAnswer.pick : null;
   const featPick =
-    asiPick?.type === "feat" ? BOONS.find((b) => b.id === asiPick.featId) : null;
+    asiPick?.type === "feat" ? FEAT_BY_ID[asiPick.featId] : null;
   const asiAllocation = asiPick?.type === "asi" ? asiPick.allocation : null;
-  const changeSelf = asiPick?.type === "change-self";
 
   return (
     <section className="space-y-2">
@@ -611,7 +684,6 @@ function ConfirmDiff({
           </li>
         )}
         {featPick && <li>Feat: <strong>{featPick.name}</strong></li>}
-        {changeSelf && <li>Feat: <strong>Change Self</strong> (consumes ASI slot)</li>}
       </ul>
       {cls && (
         <p className="text-xs text-muted-foreground">
