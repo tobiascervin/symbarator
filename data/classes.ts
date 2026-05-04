@@ -783,6 +783,10 @@ const WARRIOR_APPROACHES: ApproachDef[] = withLevelTables(
     description:
       "A Knight of the Dying Sun — heavily armed, with the fire of faith burning behind your breastplate.",
     tradition: "theurg",
+    // PG p. 143: "If your Wisdom modifier is higher than your Charisma
+    // modifier, you can use it instead of Charisma to calculate your
+    // Corruption Threshold." This is the only PG approach with this rule.
+    corruptionAbilityOverride: "wis",
     level1Features: [
       {
         name: "Spellcasting (Theurg)",

@@ -181,8 +181,16 @@ export function computeCorruptionThreshold(c: Character): number {
     // Approaches override the ability — we approximate using Cha unless mods say otherwise.
     return Math.max(2, finals.modifiers.cha + profBonus);
   }
-  // Standard: 2× prof bonus + Cha modifier, min 2.
-  return Math.max(2, profBonus * 2 + finals.modifiers.cha);
+  // Standard: 2× prof bonus + Cha modifier, min 2. Some approaches (PG p. 143
+  // — Warrior/Templar is the canonical case) MAY declare a
+  // `corruptionAbilityOverride`, in which case the ability mod becomes
+  // `max(chaMod, overrideMod)`. The override is intentionally scoped to this
+  // branch only; it MUST NOT generalize to mystic-formula classes.
+  const override = approachById(c.approachId)?.corruptionAbilityOverride;
+  const standardAbilityMod = override
+    ? Math.max(finals.modifiers.cha, finals.modifiers[override])
+    : finals.modifiers.cha;
+  return Math.max(2, profBonus * 2 + standardAbilityMod);
 }
 
 /** All skill proficiencies the character has, merging origin features (e.g. Goblin),

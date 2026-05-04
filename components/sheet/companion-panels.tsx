@@ -411,7 +411,7 @@ export function CorruptionPanel({ character: c, onChange }: PanelProps) {
         <div className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
           <dt className="text-[#3a322a]">Threshold</dt>
           <dd className="font-display text-lg flex items-center gap-2">
-            {threshold}
+            <span data-testid="corruption-threshold">{threshold}</span>
             {overThreshold && (
               <span
                 data-testid="corruption-over"

@@ -306,6 +306,16 @@ export interface ApproachDef {
    * Hunter/Witch Hunter). Other approaches MUST leave this undefined.
    */
   spellcasting?: ApproachSpellcasting;
+  /**
+   * For approaches whose corruption threshold uses an ability OTHER than the
+   * class's default. Currently used only by Warrior/Templar (PG p. 143): when
+   * set, and when the class's `shadowFormula` is `"standard"`, the
+   * corruption-threshold formula uses `max(chaMod, overrideMod)` in place of
+   * `chaMod` alone. Mystic-formula classes ignore this field — their ability
+   * is read from `spellcasting.abilityHint`. MUST NOT be set to `"cha"` (the
+   * default for the standard formula); leave undefined to mean "no override".
+   */
+  corruptionAbilityOverride?: Ability;
 }
 
 export type SpellTradition =
