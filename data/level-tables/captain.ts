@@ -10,6 +10,7 @@
 import type {
   ApproachLevelEntry,
   CharacterLevel,
+  FeatureDef,
   ClassLevelEntry,
   LevelChoice,
 } from "@/lib/character/types";
@@ -23,7 +24,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const CAPTAIN_CLASS_FEATURES: Partial<
-  Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>
+  Record<CharacterLevel, ReadonlyArray<FeatureDef>>
 > = {
   2: [
     {
@@ -102,7 +103,7 @@ export const CAPTAIN_LEVEL_TABLE: ReadonlyArray<ClassLevelEntry> =
 // Merchant Master — PG p. 98
 // ---------------------------------------------------------------------------
 
-const MERCHANT_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const MERCHANT_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Constant Training",
@@ -148,7 +149,7 @@ const MERCHANT_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ n
 // Officer — PG p. 99–100
 // ---------------------------------------------------------------------------
 
-const OFFICER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const OFFICER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Squad Orders",
@@ -189,7 +190,7 @@ const OFFICER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: str
 // Outlaw — PG p. 100
 // ---------------------------------------------------------------------------
 
-const OUTLAW_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const OUTLAW_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Fleet-footed",
@@ -234,7 +235,7 @@ const OUTLAW_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: stri
 // Poet-warrior — PG p. 101
 // ---------------------------------------------------------------------------
 
-const POET_WARRIOR_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const POET_WARRIOR_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Withering Words",

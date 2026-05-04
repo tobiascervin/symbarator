@@ -3,7 +3,7 @@
 import { BOON_BY_ID } from "@/data/feats";
 import { FeatCard, FeatCardGroup, type FeatCardBadge } from "./feat-card";
 
-interface ResolvedEntry {
+export interface ResolvedEntry {
   id: string;
   name: string;
   description: string;
@@ -12,6 +12,9 @@ interface ResolvedEntry {
 
 interface FeatListProps {
   feats: ReadonlyArray<string>;
+  /** Tap handler routed by the sheet's companion-mode wrapper. Receives the
+   *  resolved entry so the popover can open with name + description + badges. */
+  onTap?(entry: ResolvedEntry): void;
 }
 
 const FIGHTING_STYLE_LABELS: Record<string, string> = {
@@ -32,7 +35,7 @@ const FIGHTING_STYLE_LABELS: Record<string, string> = {
  *
  * Returns null when feats is empty so the caller can omit the section.
  */
-export function FeatList({ feats }: FeatListProps) {
+export function FeatList({ feats, onTap }: FeatListProps) {
   if (feats.length === 0) return null;
 
   const fromBoons: ResolvedEntry[] = [];
@@ -72,10 +75,10 @@ export function FeatList({ feats }: FeatListProps) {
   return (
     <div className="space-y-4 text-[#1d1814]">
       {fromBoons.length > 0 && (
-        <FeatGroup title="From the Boon list" entries={fromBoons} />
+        <FeatGroup title="From the Boon list" entries={fromBoons} onTap={onTap} />
       )}
       {special.length > 0 && (
-        <FeatGroup title="Special" entries={special} muted />
+        <FeatGroup title="Special" entries={special} muted onTap={onTap} />
       )}
     </div>
   );
@@ -90,10 +93,12 @@ export function FeatGroup({
   title,
   entries,
   muted,
+  onTap,
 }: {
   title: string;
   entries: ReadonlyArray<ResolvedEntry>;
   muted?: boolean;
+  onTap?(entry: ResolvedEntry): void;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -105,6 +110,7 @@ export function FeatGroup({
             description={e.description}
             badges={e.badges}
             muted={muted}
+            onTap={onTap ? () => onTap(e) : undefined}
           />
         </li>
       ))}

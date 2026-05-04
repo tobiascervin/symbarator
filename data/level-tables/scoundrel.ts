@@ -17,6 +17,7 @@ import type {
   ApproachLevelEntry,
   ApproachSpellcasting,
   CharacterLevel,
+  FeatureDef,
   ClassLevelEntry,
 } from "@/lib/character/types";
 import {
@@ -30,7 +31,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const SCOUNDREL_CLASS_FEATURES: Partial<
-  Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>
+  Record<CharacterLevel, ReadonlyArray<FeatureDef>>
 > = {
   2: [
     {
@@ -102,7 +103,7 @@ export const SCOUNDREL_LEVEL_TABLE: ReadonlyArray<ClassLevelEntry> =
 // Explorer — PG p. 128
 // ---------------------------------------------------------------------------
 
-const EXPLORER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const EXPLORER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Steadfast Watch",
@@ -142,7 +143,7 @@ const EXPLORER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: st
 // Former Cultist — PG p. 129–130
 // ---------------------------------------------------------------------------
 
-const FORMER_CULTIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const FORMER_CULTIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Alchemy",
@@ -183,7 +184,7 @@ const FORMER_CULTIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ na
 // Guild Thief — PG p. 130–131
 // ---------------------------------------------------------------------------
 
-const GUILD_THIEF_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const GUILD_THIEF_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Cheap Shot",
@@ -225,7 +226,7 @@ const GUILD_THIEF_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name:
 // Sapper — PG p. 131–132
 // ---------------------------------------------------------------------------
 
-const SAPPER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const SAPPER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Siege Expert",
@@ -267,7 +268,7 @@ const SAPPER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: stri
 // table since the existing classes.ts level1Features omits it.
 // ---------------------------------------------------------------------------
 
-const SPY_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const SPY_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   1: [
     {
       name: "Feint",
@@ -319,7 +320,7 @@ const SPY_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string;
 // Thug — PG p. 133–134
 // ---------------------------------------------------------------------------
 
-const THUG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const THUG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Acrobatic Fighter",
@@ -353,7 +354,7 @@ const THUG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string
 // Treasure-hunter — PG p. 134
 // ---------------------------------------------------------------------------
 
-const TREASURE_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const TREASURE_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Alchemy",

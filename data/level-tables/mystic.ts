@@ -18,6 +18,7 @@ import type {
   ApproachLevelEntry,
   ApproachSpellcasting,
   CharacterLevel,
+  FeatureDef,
   ClassLevelEntry,
 } from "@/lib/character/types";
 import {
@@ -31,7 +32,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const MYSTIC_CLASS_FEATURES: Partial<
-  Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>
+  Record<CharacterLevel, ReadonlyArray<FeatureDef>>
 > = {
   2: [
     {
@@ -88,7 +89,7 @@ export const MYSTIC_LEVEL_TABLE: ReadonlyArray<ClassLevelEntry> =
 // ---------------------------------------------------------------------------
 
 // Artifact Crafter — PG p. 110–111.
-const ARTIFACT_CRAFTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const ARTIFACT_CRAFTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Artifact Expert",
@@ -127,7 +128,7 @@ const ARTIFACT_CRAFTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ 
 };
 
 // Self-taught — PG p. 112.
-const SELF_TAUGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const SELF_TAUGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Personal Investment",
@@ -166,7 +167,7 @@ const SELF_TAUGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name:
 };
 
 // Sorcerer — PG p. 113–114.
-const SORCERER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const SORCERER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "The Shadowed Slope",
@@ -205,7 +206,7 @@ const SORCERER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: st
 };
 
 // Staff Mage — PG p. 114–115.
-const STAFF_MAGE_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const STAFF_MAGE_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Staff Magic",
@@ -244,7 +245,7 @@ const STAFF_MAGE_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: 
 };
 
 // Symbolist — PG p. 116–117.
-const SYMBOLIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const SYMBOLIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Rune Tattoos",
@@ -283,7 +284,7 @@ const SYMBOLIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: s
 };
 
 // Theurg — PG p. 118–119.
-const THEURG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const THEURG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Turn Undead",
@@ -322,7 +323,7 @@ const THEURG_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: stri
 };
 
 // Troll Singer — PG p. 119–121.
-const TROLL_SINGER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const TROLL_SINGER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Songs of the Dusk",
@@ -358,7 +359,7 @@ const TROLL_SINGER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name
 };
 
 // Witch — PG p. 121–123.
-const WITCH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const WITCH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "A Chosen Path (next benefit)",
@@ -395,7 +396,7 @@ const WITCH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: strin
 };
 
 // Wizard — PG p. 123–124.
-const WIZARD_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const WIZARD_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Bonus Spell — Arcane Lock",

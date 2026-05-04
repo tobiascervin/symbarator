@@ -11,6 +11,11 @@ import type { Character } from "./types";
 import { ORIGIN_BY_ID } from "@/data/origins";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { computeFinalAbilities } from "./compute";
+import {
+  findTrackedFeatures,
+  remainingUses,
+  resolveFeatureUsageMax,
+} from "./features";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -143,13 +148,13 @@ export function recordDeathSave(
 // Rests
 // ---------------------------------------------------------------------------
 
-/** Schema-level no-op. Short-rest UX is the Hit Dice tracker. */
+/** Restores all `usage.per === "short-rest"` tracked features to max. */
 export function shortRest(c: Character): Character {
-  return c;
+  return restoreFeaturesByPer(c, "short-rest");
 }
 
 export function longRest(c: Character): Character {
-  const next = clone(c);
+  let next = clone(c);
   next.currentHp = next.maxHp;
   next.tempHp = 0;
   // Half HD restored, rounded up; capped at level; minimum 1.
@@ -157,12 +162,58 @@ export function longRest(c: Character): Character {
   next.hitDiceRemaining = Math.min(next.level, next.hitDiceRemaining + restoredHd);
   next.currentSpellSlots = maxSlotsAt(next);
   next.deathSaves = { successes: 0, failures: 0 };
+  // Long rest = short rest + more. Restore both per-types.
+  next = restoreFeaturesByPer(next, "short-rest");
+  next = restoreFeaturesByPer(next, "long-rest");
   return next;
 }
 
 export function extendedRest(c: Character): Character {
   const next = longRest(c);
   next.hitDiceRemaining = next.level;
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Feature usage
+// ---------------------------------------------------------------------------
+
+/**
+ * Decrements the remaining uses for a tracked feature. Lazy-init: if the
+ * character has no entry yet, treats the current value as the resolved max,
+ * then decrements. Floors at 0. No-op when the feature isn't tracked
+ * (no `id` or no `usage` in the catalog).
+ */
+export function useFeature(c: Character, featureId: string): Character {
+  const tracked = findTrackedFeatures(c).find((t) => t.id === featureId);
+  if (!tracked) return c;
+  const cur = remainingUses(c, tracked);
+  const nextRemaining = Math.max(0, cur - 1);
+  if (nextRemaining === cur) return c;
+  const next = clone(c);
+  next.featureUses[featureId] = nextRemaining;
+  return next;
+}
+
+/** Sets the remaining uses for a tracked feature back to its resolved max. */
+export function restoreFeature(c: Character, featureId: string): Character {
+  const tracked = findTrackedFeatures(c).find((t) => t.id === featureId);
+  if (!tracked) return c;
+  const next = clone(c);
+  next.featureUses[featureId] = resolveFeatureUsageMax(c, tracked.usage);
+  return next;
+}
+
+function restoreFeaturesByPer(
+  c: Character,
+  per: "short-rest" | "long-rest",
+): Character {
+  const tracked = findTrackedFeatures(c).filter((t) => t.usage.per === per);
+  if (tracked.length === 0) return c;
+  const next = clone(c);
+  for (const t of tracked) {
+    next.featureUses[t.id] = resolveFeatureUsageMax(next, t.usage);
+  }
   return next;
 }
 

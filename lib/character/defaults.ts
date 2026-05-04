@@ -43,6 +43,7 @@ export function emptyCharacter(id: string): Character {
     currentSpellSlots: new Array(9).fill(0),
     hitDiceRemaining: 0,
     deathSaves: { successes: 0, failures: 0 },
+    featureUses: {},
   };
 }
 

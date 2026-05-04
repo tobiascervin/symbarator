@@ -15,6 +15,7 @@ import type {
   ApproachLevelEntry,
   CharacterLevel,
   ClassLevelEntry,
+  FeatureDef,
   LevelChoice,
 } from "@/lib/character/types";
 import { ASI_FEAT_LEVELS } from "@/lib/character/types";
@@ -40,7 +41,7 @@ export const LEVELS: ReadonlyArray<CharacterLevel> = [
  * the ASI/feat choice on every Symbaroum ASI level automatically.
  */
 export function buildClassLevelTable(
-  featuresByLevel: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>>,
+  featuresByLevel: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>>,
   choicesByLevel: Partial<Record<CharacterLevel, ReadonlyArray<LevelChoice>>> = {},
 ): ReadonlyArray<ClassLevelEntry> {
   return LEVELS.map((level): ClassLevelEntry => {
@@ -60,7 +61,7 @@ export function buildClassLevelTable(
 
 /** Same shape as `buildClassLevelTable` but without the automatic ASI slot. */
 export function buildApproachLevelTable(
-  featuresByLevel: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>>,
+  featuresByLevel: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>>,
   choicesByLevel: Partial<Record<CharacterLevel, ReadonlyArray<LevelChoice>>> = {},
 ): ReadonlyArray<ApproachLevelEntry> {
   return LEVELS.map((level): ApproachLevelEntry => {

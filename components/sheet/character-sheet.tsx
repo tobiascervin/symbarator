@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import type { Character, SpellDef } from "@/lib/character/types";
+import type { Character, FeatureDef, SpellDef } from "@/lib/character/types";
 import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/types";
-import { spendSlot } from "@/lib/character/live-state";
+import { spendSlot, useFeature } from "@/lib/character/live-state";
+import type { FeatureSource } from "@/lib/character/features";
 import { SpellCastPopover } from "@/components/spells/spell-cast-popover";
+import {
+  FeatTapPopover,
+  type TappedEntry,
+} from "@/components/sheet/feat-tap-popover";
+import type { FeatCardBadge } from "@/components/sheet/feat-card";
 import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID, approachById } from "@/data/classes";
@@ -58,6 +64,12 @@ export function CharacterSheet({
   const skills = computeSkillScores(c);
   const spell = computeSpellcasting(c);
   const initiative = computeInitiative(c);
+
+  // Companion-mode tap state for the FeatTapPopover. Non-null = open.
+  const [tapped, setTapped] = useState<TappedEntry | null>(null);
+  function openTap(feature: FeatureDef, source: FeatureSource, badges?: ReadonlyArray<FeatCardBadge>) {
+    setTapped({ feature, source, badges });
+  }
 
   return (
     <div className="space-y-6">
@@ -147,27 +159,51 @@ export function CharacterSheet({
             <SectionHeader>Features</SectionHeader>
             <div className="space-y-3 text-sm text-[#1d1814]">
               {origin?.features.map((f) => (
-                <Feature key={`origin-${f.name}`} title={`${origin.name}: ${f.name}`}>
+                <Feature
+                  key={`origin-${f.name}`}
+                  title={`${origin.name}: ${f.name}`}
+                  onTap={() => openTap(f, { kind: "origin" })}
+                >
                   {f.description}
                 </Feature>
               ))}
               {subchoice?.features?.map((f) => (
-                <Feature key={`sub-${f.name}`} title={`${subchoice.name}: ${f.name}`}>
+                <Feature
+                  key={`sub-${f.name}`}
+                  title={`${subchoice.name}: ${f.name}`}
+                  onTap={() => openTap(f, { kind: "subchoice" })}
+                >
                   {f.description}
                 </Feature>
               ))}
               {bg?.feature && (
-                <Feature title={`${bg.name}: ${bg.feature.name}`}>
+                <Feature
+                  title={`${bg.name}: ${bg.feature.name}`}
+                  onTap={() =>
+                    openTap(
+                      { name: bg.feature.name, description: bg.feature.description },
+                      { kind: "background" },
+                    )
+                  }
+                >
                   {bg.feature.description}
                 </Feature>
               )}
               {cls?.level1Features.map((f) => (
-                <Feature key={`class-${f.name}`} title={`${cls.name}: ${f.name}`}>
+                <Feature
+                  key={`class-${f.name}`}
+                  title={`${cls.name}: ${f.name}`}
+                  onTap={() => openTap(f, { kind: "class-l1" })}
+                >
                   {f.description}
                 </Feature>
               ))}
               {approach?.level1Features.map((f) => (
-                <Feature key={`approach-${f.name}`} title={`${approach.name}: ${f.name}`}>
+                <Feature
+                  key={`approach-${f.name}`}
+                  title={`${approach.name}: ${f.name}`}
+                  onTap={() => openTap(f, { kind: "approach-l1" })}
+                >
                   {f.description}
                 </Feature>
               ))}
@@ -179,7 +215,11 @@ export function CharacterSheet({
               {/* Per-level class features earned past L1. */}
               {cls?.levelTable.slice(0, c.level).flatMap((row, i) =>
                 row.features.map((f) => (
-                  <Feature key={`class-l${i + 1}-${f.name}`} title={`${cls.name} L${i + 1}: ${f.name}`}>
+                  <Feature
+                    key={`class-l${i + 1}-${f.name}`}
+                    title={`${cls.name} L${i + 1}: ${f.name}`}
+                    onTap={() => openTap(f, { kind: "class", level: i + 1 })}
+                  >
                     {f.description}
                   </Feature>
                 )),
@@ -187,7 +227,11 @@ export function CharacterSheet({
               {/* Per-level approach features earned past L1. */}
               {approach?.levelTable.slice(0, c.level).flatMap((row, i) =>
                 row.features.map((f) => (
-                  <Feature key={`approach-l${i + 1}-${f.name}`} title={`${approach.name} L${i + 1}: ${f.name}`}>
+                  <Feature
+                    key={`approach-l${i + 1}-${f.name}`}
+                    title={`${approach.name} L${i + 1}: ${f.name}`}
+                    onTap={() => openTap(f, { kind: "approach", level: i + 1 })}
+                  >
                     {f.description}
                   </Feature>
                 )),
@@ -201,6 +245,15 @@ export function CharacterSheet({
               <SectionHeader>Boons</SectionHeader>
               <FeatGroup
                 title="Taken at character creation"
+                onTap={(e) => {
+                  const boon = BOON_BY_ID[e.id];
+                  if (!boon) return;
+                  openTap(
+                    { name: boon.name, description: boon.description },
+                    { kind: "boon" },
+                    e.badges,
+                  );
+                }}
                 entries={c.boons.map((id) => {
                   const boon = BOON_BY_ID[id];
                   if (!boon) {
@@ -237,6 +290,15 @@ export function CharacterSheet({
               <FeatGroup
                 title="Carried since character creation"
                 muted
+                onTap={(e) => {
+                  const b = BURDEN_BY_ID[e.id];
+                  if (!b) return;
+                  openTap(
+                    { name: b.name, description: b.description },
+                    { kind: "burden" },
+                    e.badges,
+                  );
+                }}
                 entries={c.burdens.map((id) => {
                   const b = BURDEN_BY_ID[id];
                   if (!b) return { id, name: id, description: "Unknown burden id." };
@@ -273,7 +335,16 @@ export function CharacterSheet({
           {c.feats.length > 0 && (
             <Parchment>
               <SectionHeader>Feats</SectionHeader>
-              <FeatList feats={c.feats} />
+              <FeatList
+                feats={c.feats}
+                onTap={(e) =>
+                  openTap(
+                    { name: e.name, description: e.description },
+                    { kind: "feat" },
+                    e.badges,
+                  )
+                }
+              />
             </Parchment>
           )}
 
@@ -392,6 +463,20 @@ export function CharacterSheet({
           </Parchment>
         </div>
       </div>
+
+      {/* Companion-mode tap popover for any feat / feature card. */}
+      <FeatTapPopover
+        open={tapped !== null}
+        onOpenChange={(o) => {
+          if (!o) setTapped(null);
+        }}
+        entry={tapped}
+        character={c}
+        onUse={(featureId) => {
+          handleChange(useFeature(c, featureId));
+          // Don't close the popover — let the player see the decremented count.
+        }}
+      />
     </div>
   );
 }
@@ -406,7 +491,28 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Feature({ title, children }: { title: string; children: React.ReactNode }) {
+function Feature({
+  title,
+  children,
+  onTap,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onTap?: () => void;
+}) {
+  if (onTap) {
+    return (
+      <button
+        type="button"
+        onClick={onTap}
+        className="block w-full text-left rounded-sm transition-colors hover:bg-[#7a1f1f]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]/40 px-1 -mx-1"
+        aria-label={`Open ${title}`}
+      >
+        <p className="font-display tracking-wide text-[#1d1814]">{title}</p>
+        <p className="text-[#3a322a]">{children}</p>
+      </button>
+    );
+  }
   return (
     <div>
       <p className="font-display tracking-wide text-[#1d1814]">{title}</p>

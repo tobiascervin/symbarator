@@ -16,6 +16,7 @@ import type {
   ApproachLevelEntry,
   ApproachSpellcasting,
   CharacterLevel,
+  FeatureDef,
   ClassLevelEntry,
 } from "@/lib/character/types";
 import {
@@ -29,7 +30,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const HUNTER_CLASS_FEATURES: Partial<
-  Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>
+  Record<CharacterLevel, ReadonlyArray<FeatureDef>>
 > = {
   2: [
     {
@@ -106,7 +107,7 @@ export const HUNTER_LEVEL_TABLE: ReadonlyArray<ClassLevelEntry> =
 // Bounty Hunter — PG p. 104
 // ---------------------------------------------------------------------------
 
-const BOUNTY_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const BOUNTY_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Rough Fighting",
@@ -148,7 +149,7 @@ const BOUNTY_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ nam
 // Ironsworn — PG p. 105
 // ---------------------------------------------------------------------------
 
-const IRONSWORN_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const IRONSWORN_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Loremaster",
@@ -193,7 +194,7 @@ const IRONSWORN_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: s
 // Monster Hunter — PG p. 106
 // ---------------------------------------------------------------------------
 
-const MONSTER_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const MONSTER_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Trapper",
@@ -238,7 +239,7 @@ const MONSTER_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ na
 // all-zero slot table with progression in `spellsKnown`.
 // ---------------------------------------------------------------------------
 
-const WITCH_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const WITCH_HUNTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Ritualist (+1 spell)",

@@ -107,6 +107,16 @@ export function migrateCharacter(raw: unknown): Character {
   ) {
     character.deathSaves = { successes: 0, failures: 0 };
   }
+  // Backfill `featureUses` for pre-1.10 saves. Absent entries are treated as
+  // "full uses" by the popover and the rest primitives, so `{}` is the
+  // correct default for both new characters and pre-1.10 saves alike.
+  if (
+    typeof character.featureUses !== "object" ||
+    character.featureUses === null ||
+    Array.isArray(character.featureUses)
+  ) {
+    character.featureUses = {};
+  }
 
   return character;
 }

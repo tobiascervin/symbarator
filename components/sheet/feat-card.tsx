@@ -19,6 +19,12 @@ export interface FeatCardProps {
   badges?: ReadonlyArray<FeatCardBadge>;
   /** Mutes the card slightly — used for Burdens to read as "carried weight". */
   muted?: boolean;
+  /**
+   * When defined, the card becomes a tap target that opens the
+   * FeatTapPopover for the entry. Wired by the sheet's companion-mode
+   * wrapper; left undefined for printable mode and wizard preview surfaces.
+   */
+  onTap?(): void;
 }
 
 /**
@@ -27,16 +33,15 @@ export interface FeatCardProps {
  * optional badge row · description), but uses the parchment palette so it
  * sits naturally inside the sheet's `Parchment` panels.
  */
-export function FeatCard({ name, description, badges, muted }: FeatCardProps) {
-  return (
-    <div
-      className={cn(
-        "rounded-md border p-3 flex flex-col gap-1.5",
-        muted
-          ? "border-dashed border-[#3a322a]/30 bg-[#f7f1e3]/40"
-          : "border-[#9a8a6b]/60 bg-[#efe5cb]/40",
-      )}
-    >
+export function FeatCard({
+  name,
+  description,
+  badges,
+  muted,
+  onTap,
+}: FeatCardProps) {
+  const inner = (
+    <>
       <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <span className="font-display text-base text-[#1d1814]">{name}</span>
         {badges && badges.length > 0 && (
@@ -48,8 +53,32 @@ export function FeatCard({ name, description, badges, muted }: FeatCardProps) {
         )}
       </div>
       <p className="text-xs leading-snug text-[#3a322a]">{description}</p>
-    </div>
+    </>
   );
+
+  const baseClass = cn(
+    "rounded-md border p-3 flex flex-col gap-1.5 text-left w-full",
+    muted
+      ? "border-dashed border-[#3a322a]/30 bg-[#f7f1e3]/40"
+      : "border-[#9a8a6b]/60 bg-[#efe5cb]/40",
+  );
+
+  if (onTap) {
+    return (
+      <button
+        type="button"
+        onClick={onTap}
+        className={cn(
+          baseClass,
+          "cursor-pointer transition-colors hover:border-[#7a1f1f]/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]/40",
+        )}
+        aria-label={`Open ${name}`}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className={baseClass}>{inner}</div>;
 }
 
 /**

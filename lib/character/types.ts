@@ -114,7 +114,7 @@ export interface OriginSubchoice {
   /** Additional fixed ability bonuses granted by this culture/branch. */
   asi?: Partial<Record<Ability, number>>;
   /** Extra features granted on top of the origin's base features. */
-  features?: ReadonlyArray<{ name: string; description: string }>;
+  features?: ReadonlyArray<FeatureDef>;
 }
 
 export interface OriginDef {
@@ -126,7 +126,7 @@ export interface OriginDef {
   size: Size;
   speed: number;
   languages: { fixed: LanguageId[]; chooseFromHuman?: boolean };
-  features: ReadonlyArray<{ name: string; description: string }>;
+  features: ReadonlyArray<FeatureDef>;
   /** Optional sub-pick under the origin (e.g. Human: Ambrian vs Barbarian). */
   subchoices?: { prompt: string; options: OriginSubchoice[] };
   // Cosmetic name suggestions for the chooser.
@@ -155,6 +155,46 @@ export interface BackgroundDef {
 }
 
 /**
+ * Optional structured-resource shape for a class/approach feature.
+ *
+ * `count: "profBonus"` resolves to `computeProficiencyBonus(c)` at display
+ * time; `count: "level"` resolves to `c.level`. Numeric counts are taken
+ * as-is. Extensible — other derivations (`"halfLevel"`, `"conMod"`, …) can
+ * join the union without breaking existing entries.
+ */
+export type FeatureUsageMax = number | "profBonus" | "level";
+
+export interface FeatureUsage {
+  count: FeatureUsageMax;
+  per: "short-rest" | "long-rest";
+}
+
+/**
+ * Optional structured-effect shape for a class/approach feature. Narrow for
+ * v1 — only the shapes the first-pass content actually needs. `passive` is
+ * the explicit "we know there's no roll" marker (distinct from a missing
+ * `effect`, which means "we haven't encoded one"). Extensible.
+ */
+export type FeatureEffect =
+  | { kind: "tempHp"; dice: DiceExpression; addAbilityMod?: Ability }
+  | { kind: "passive"; note?: string };
+
+/**
+ * Inline feature shape used by class/approach level entries. `id` /
+ * `usage` / `effect` are optional — most narrative features carry only
+ * `name` + `description`. Adding `id` is the trigger for usage tracking
+ * (the popover and rest primitives both key off it).
+ */
+export interface FeatureDef {
+  /** Stable id for usage tracking. Class-prefixed by convention (e.g. `"warrior:battle-wind"`). */
+  id?: string;
+  name: string;
+  description: string;
+  usage?: FeatureUsage;
+  effect?: FeatureEffect;
+}
+
+/**
  * A single per-level entry on a class's level table. Index 0 corresponds to
  * level 1; tables MUST be exactly 20 rows long.
  */
@@ -162,7 +202,7 @@ export interface ClassLevelEntry {
   level: CharacterLevel;
   profBonus: 2 | 3 | 4 | 5 | 6;
   /** Generic feature grants — surfaced on the sheet, no choices required. */
-  features: ReadonlyArray<{ name: string; description: string }>;
+  features: ReadonlyArray<FeatureDef>;
   /** Choice prompts the level-up flow surfaces this level. */
   choices?: ReadonlyArray<LevelChoice>;
 }
@@ -170,7 +210,7 @@ export interface ClassLevelEntry {
 /** Approach-specific row, parallel to ClassLevelEntry. */
 export interface ApproachLevelEntry {
   level: CharacterLevel;
-  features: ReadonlyArray<{ name: string; description: string }>;
+  features: ReadonlyArray<FeatureDef>;
   choices?: ReadonlyArray<LevelChoice>;
 }
 
@@ -219,7 +259,7 @@ export interface ClassDef {
   startingEquipment: string[]; // each entry is one "(a) X or (b) Y" choice line
   shadowFormula: "standard" | "mystic";
   // Level-1 features common to the class (Approach features added on top).
-  level1Features: ReadonlyArray<{ name: string; description: string }>;
+  level1Features: ReadonlyArray<FeatureDef>;
   // Whether class offers a Fighting Style at L1.
   fightingStyleAt1?: FightingStyleId[];
   approaches: ApproachDef[];
@@ -237,7 +277,7 @@ export interface ApproachDef {
   classId: string;
   name: string;
   description: string;
-  level1Features: ReadonlyArray<{ name: string; description: string }>;
+  level1Features: ReadonlyArray<FeatureDef>;
   // For Mystic approaches (and any other tradition-bound caster): which spell tradition.
   tradition?: SpellTradition;
   /**
@@ -493,6 +533,14 @@ export interface Character {
   hitDiceRemaining: number;
   /** Death save tally; surfaced on the sheet only when currentHp === 0. */
   deathSaves: { successes: number; failures: number };
+  /**
+   * Remaining uses for tracked class/approach features, keyed by the
+   * feature's `id`. Absence of an entry is treated as "full uses" — the
+   * popover lazy-initializes the counter on first decrement, so this map
+   * stays empty until the player actually spends a use. Backfilled by
+   * `migrateCharacter` for pre-1.10 saves.
+   */
+  featureUses: Record<string, number>;
 }
 
 export interface CharacterSummary {

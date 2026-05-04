@@ -53,6 +53,7 @@ function makeBase(overrides: Partial<Character> & { id: string }): Character {
     currentSpellSlots: new Array(9).fill(0),
     hitDiceRemaining: 1,
     deathSaves: { successes: 0, failures: 0 },
+    featureUses: {},
   };
   const merged: Character = { ...defaults, ...overrides };
   // Default companion-mode state so fixtures don't load downed.

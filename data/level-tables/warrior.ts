@@ -13,6 +13,7 @@ import type {
   ApproachLevelEntry,
   ApproachSpellcasting,
   CharacterLevel,
+  FeatureDef,
   ClassLevelEntry,
   LevelChoice,
 } from "@/lib/character/types";
@@ -27,13 +28,15 @@ import {
 // ---------------------------------------------------------------------------
 
 const WARRIOR_CLASS_FEATURES: Partial<
-  Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>
+  Record<CharacterLevel, ReadonlyArray<FeatureDef>>
 > = {
   2: [
     {
+      id: "warrior:action-surge",
       name: "Action Surge",
       description:
         "Once per short or long rest, on your turn take one additional action. From L15 you may use it twice per rest, but only once per turn.",
+      usage: { count: 1, per: "short-rest" },
     },
   ],
   5: [
@@ -45,9 +48,11 @@ const WARRIOR_CLASS_FEATURES: Partial<
   ],
   7: [
     {
+      id: "warrior:indomitable",
       name: "Indomitable",
       description:
         "Once per long or extended rest, reroll a failed saving throw and use the new result.",
+      usage: { count: 1, per: "long-rest" },
     },
   ],
   11: [
@@ -58,8 +63,13 @@ const WARRIOR_CLASS_FEATURES: Partial<
   ],
   15: [
     {
+      // Same id as the L2 entry — `findTrackedFeatures` walks L1 → c.level
+      // and last-write-wins, so at character L15+ this entry's max (2)
+      // overrides the L2 entry's max (1).
+      id: "warrior:action-surge",
       name: "Action Surge (2 uses)",
       description: "You may use Action Surge twice per rest, but only once on the same turn.",
+      usage: { count: 2, per: "short-rest" },
     },
   ],
   18: [
@@ -89,7 +99,7 @@ export const WARRIOR_LEVEL_TABLE: ReadonlyArray<ClassLevelEntry> =
 // Berserker — PG p. 138
 // ---------------------------------------------------------------------------
 
-const BERSERKER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const BERSERKER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Reckless Attack",
@@ -134,7 +144,7 @@ const BERSERKER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: s
 // Duelist — PG p. 139
 // ---------------------------------------------------------------------------
 
-const DUELIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const DUELIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Twin Attack",
@@ -179,7 +189,7 @@ const DUELIST_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: str
 // Knight — PG p. 140
 // ---------------------------------------------------------------------------
 
-const KNIGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const KNIGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Two-handed Force",
@@ -224,7 +234,7 @@ const KNIGHT_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: stri
 // Rune Smith — PG p. 141
 // ---------------------------------------------------------------------------
 
-const RUNE_SMITH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const RUNE_SMITH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Two-handed Force",
@@ -266,7 +276,7 @@ const RUNE_SMITH_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: 
 // (All approach features are improvements to the L1 Rune Tattoos.)
 // ---------------------------------------------------------------------------
 
-const TATTOOED_FIGHTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const TATTOOED_FIGHTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Rune Tattoos — Empower",
@@ -305,7 +315,7 @@ const TATTOOED_FIGHTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ 
 // Templar — PG p. 142–143
 // ---------------------------------------------------------------------------
 
-const TEMPLAR_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const TEMPLAR_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Holy Aura",
@@ -345,7 +355,7 @@ const TEMPLAR_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: str
 // Weapon Master — PG p. 144
 // ---------------------------------------------------------------------------
 
-const WEAPON_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const WEAPON_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Acrobatic Fighter",
@@ -387,7 +397,7 @@ const WEAPON_MASTER_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ nam
 // Wrathguard — PG p. 145
 // ---------------------------------------------------------------------------
 
-const WRATHGUARD_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<{ name: string; description: string }>>> = {
+const WRATHGUARD_FEATURES: Partial<Record<CharacterLevel, ReadonlyArray<FeatureDef>>> = {
   3: [
     {
       name: "Blood Combat — Advantage",

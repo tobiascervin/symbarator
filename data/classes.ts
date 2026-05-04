@@ -712,9 +712,11 @@ const WARRIOR_APPROACHES: ApproachDef[] = withLevelTables(
       "Spirits of rage follow you. In combat you fight with primal ferocity; in peace you are thoughtful and patient.",
     level1Features: [
       {
+        id: "berserker:rage",
         name: "Rage",
         description:
           "On your turn you can enter a rage as a bonus action. While raging, and not wearing heavy armor: advantage on Strength checks/saves, +1 + half prof bonus to melee damage with Strength weapons, resistance to bludgeoning/piercing/slashing. You can't cast or concentrate while raging. Lasts 1 minute. Uses per long/extended rest = your proficiency bonus.",
+        usage: { count: "profBonus", per: "long-rest" },
       },
     ],
   },
@@ -856,9 +858,12 @@ const WARRIOR: ClassDef = {
   shadowFormula: "standard",
   level1Features: [
     {
+      id: "warrior:battle-wind",
       name: "Battle Wind",
       description:
         "When hit by an attack roll you can use your reaction to gain temporary HP equal to 2d4 + your Constitution modifier. You can use this feature a number of times equal to your proficiency bonus, then must take a long or extended rest.",
+      usage: { count: "profBonus", per: "long-rest" },
+      effect: { kind: "tempHp", dice: { count: 2, faces: 4 }, addAbilityMod: "con" },
     },
   ],
   fightingStyleAt1: [
