@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-05-04
+
+The level-up dialog's optional "swap a known spell" picker is now reversible — pick a swap target by mistake and you can back out without losing the rest of your level-up answers. Adds a ghost-variant `Clear swap` button beside the two swap selects that resets both fields together. Visible only when one or both swap fields are set, so the default presentation is unchanged.
+
+### Added
+
+- **`Clear swap` button in the level-up swap picker** (`components/level-up/level-up-dialog.tsx#SwapPicker`) — sits next to the helper text, ghost variant, `aria-label="Clear swap"`. Renders only when `swappedSpellOut || swappedSpellIn` is set; clicking it calls `onChange(undefined, undefined)` so both fields reset to the unset state in one tap. The shadcn/Radix `Select` primitive forbids `value=""` items, which is why the abandoned-swap path needed an out-of-band control rather than a `— none —` entry inside the dropdown.
+- **New E2E test** (`e2e/level-up.spec.ts`) — Mystic at L1→L2 (where `canSwap: true` fires and `+1 spell known` is required): pick a swap-out value, assert the Clear swap button appears, click it, assert both swap selects return to their placeholder text and the Clear swap button disappears, then pick the required new spell and confirm — `spellPicks.spellsKnown` keeps the original `magic-missile` and `shield` and grows by exactly one. Suite total: **83 passing**.
+
+### Changed
+
+- **`SwapPicker` layout** — the helper text and the (conditional) Clear swap button now live in a flex row above the two-column select grid, so the keyboard tab order goes: helper text → Clear swap → swap-out → swap-in.
+
+### Fixed
+
+- **`react-hooks/rules-of-hooks` violations in the wizard's approach step** — the v1.12.0 templar-bless work added `useMemo` calls below the component's early returns, which works but trips the lint rule (and risks runtime hook-order mismatches if the early returns reshuffle later). Hoisted all three `useMemo` calls above the early returns and dropped an unused `grantedSpells` const. No functional change in the approach step; lint count drops by 1 against the v1.11.0 baseline.
+
+### Notes
+
+- **No `Character` schema change.** `LevelChoiceAnswer.swappedSpellOut` and `swappedSpellIn` were already `string | undefined` and the validator already treats both-undefined as a no-op, so the new control is a UI-only addition. No migration.
+- **The known spell to be swapped out displays as a raw spell id** (e.g. `magic-missile` rather than `Magic Missile`) when picked from the swap-out dropdown — pre-existing behavior; the dropdown's name lookup uses the new-spell pool, which excludes already-known spells. Tracked as a separate follow-up; the new test asserts on the id text to avoid coupling the swap-clear scope to that fix.
+
+[1.13.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.13.0
+
 ## [1.12.0] - 2026-05-04
 
 Templar approach now grants the *bless* spell automatically, on top of the player's L1 spell picks (PG p. 143: "you learn 2 cantrips and 1 first-level spell from the Theurg tradition list, plus the bless spell"). Adds a generic `alwaysKnownSpells` list to `ApproachSpellcasting` so any approach can grant fixed spells without burning the player's choice budget — Templar declares `["bless"]` today, the door is open for future approaches with no further schema work. Granted spells surface as a read-only "Always known" section in the wizard, render with a "Granted" badge in the sheet's spellbook, and route through the existing cast popover with no extra plumbing. The wizard's cantrip picker also gains the same collapsible header treatment that the 1st-level picker got in v1.11.
