@@ -16,25 +16,27 @@ import type { DraftState } from "./use-draft";
 
 export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
   const { draft, update } = draftHook;
+  // Hooks must run on every render — keep them above any conditional return.
+  const cantripsSelected = useMemo(
+    () => new Set(draft?.spellPicks?.cantrips ?? []),
+    [draft?.spellPicks?.cantrips],
+  );
+  const spellsSelected = useMemo(
+    () => new Set(draft?.spellPicks?.spellsKnown ?? []),
+    [draft?.spellPicks?.spellsKnown],
+  );
+  const cls = draft?.classId ? CLASS_BY_ID[draft.classId] : undefined;
+  const selected = cls?.approaches.find((a) => a.id === draft?.approachId);
+  const grantedSet = useMemo(
+    () => new Set(selected?.spellcasting?.alwaysKnownSpells ?? []),
+    [selected],
+  );
+
   if (!draft) return null;
   if (!draft.classId) {
     return <p className="italic text-muted-foreground">Choose a class first.</p>;
   }
-
-  const cls = CLASS_BY_ID[draft.classId];
   if (!cls) return null;
-
-  const selected = cls.approaches.find((a) => a.id === draft.approachId);
-  const cantripsSelected = useMemo(
-    () => new Set(draft.spellPicks?.cantrips ?? []),
-    [draft.spellPicks?.cantrips],
-  );
-  const spellsSelected = useMemo(
-    () => new Set(draft.spellPicks?.spellsKnown ?? []),
-    [draft.spellPicks?.spellsKnown],
-  );
-  const grantedSpells = selected?.spellcasting?.alwaysKnownSpells ?? [];
-  const grantedSet = useMemo(() => new Set(grantedSpells), [grantedSpells]);
 
   function selectApproach(id: string) {
     update((d) => {

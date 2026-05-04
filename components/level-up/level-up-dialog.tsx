@@ -513,11 +513,25 @@ function SwapPicker({
   inn: string | undefined;
   onChange(out: string | undefined, inn: string | undefined): void;
 }) {
+  const hasSwap = Boolean(out || inn);
   return (
     <div className="rounded border p-3 space-y-2">
-      <p className="text-xs text-muted-foreground">
-        Optionally swap one known spell for a different one of the same level.
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          Optionally swap one known spell for a different one of the same level.
+        </p>
+        {hasSwap && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            aria-label="Clear swap"
+            onClick={() => onChange(undefined, undefined)}
+          >
+            Clear swap
+          </Button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <Select value={out ?? ""} onValueChange={(v) => onChange(v || undefined, inn)}>
           <SelectTrigger>

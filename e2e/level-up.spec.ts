@@ -3,7 +3,7 @@
 // spell-pick dedupe regression, and the L20 disable.
 
 import { test, expect } from "@playwright/test";
-import { seedCharacter, readCharacter } from "./helpers/seed";
+import { seedCharacter, readCharacter, reseedCurrent } from "./helpers/seed";
 import {
   changelingAtL3,
   freshL1Hero,
@@ -208,6 +208,52 @@ test.describe("Level-up dialog", () => {
     await page.getByRole("button", { name: /Level Up/i }).click();
     // Mystic at L1→L2 gains +1 spell known per progression.
     await expect(page.getByText(/New spells.*pick 1/i)).toBeVisible();
+  });
+
+  test("swap picker exposes a 'Clear swap' control that resets both fields", async ({ page }) => {
+    // Mystic at L1→L2 gains +1 spell known and `canSwap: true`, so the
+    // swap picker renders alongside the new-spell picker.
+    const id = await seedCharacter(page, mysticAtL1);
+    await gotoSheet(page, id);
+
+    await page.getByRole("button", { name: /Level Up/i }).click();
+    const dialog = page.locator('[data-slot="dialog-content"]');
+
+    // Initially the Clear swap button is not in the DOM (no swap fields set).
+    await expect(dialog.getByRole("button", { name: /Clear swap/i })).toHaveCount(0);
+
+    // Pick a swap-out value — the Mystic knows Magic Missile and Shield.
+    // The swap-out dropdown labels options by raw id (existing behavior:
+    // the catalog name lookup uses the new-spell pool, which excludes the
+    // already-known spell), so the option text is "magic-missile".
+    const swapOut = dialog.getByRole("combobox").first();
+    await swapOut.click();
+    await page.getByRole("option", { name: /magic-missile/ }).click();
+
+    // Clear swap appears now that one side is set.
+    const clearBtn = dialog.getByRole("button", { name: /Clear swap/i });
+    await expect(clearBtn).toBeVisible();
+
+    // Activate Clear — both selects return to their placeholders ("Swap out",
+    // "Swap in") and the Clear button disappears again.
+    await clearBtn.click();
+    await expect(dialog.getByRole("combobox").first()).toContainText(/Swap out/);
+    await expect(dialog.getByRole("combobox").nth(1)).toContainText(/Swap in/);
+    await expect(dialog.getByRole("button", { name: /Clear swap/i })).toHaveCount(0);
+
+    // Pick the required new spell (Mystic L1→L2 needs 1) and confirm —
+    // level-up succeeds without applying any swap.
+    await page.getByRole("checkbox").first().check();
+    await reseedCurrent(page, id);
+    await page.getByRole("button", { name: /Confirm Level/i }).click();
+
+    await expect(page.getByText(/Level 2/)).toBeVisible();
+    const after = await readCharacter(page, id);
+    // Original spells (magic-missile, shield) survive; only the new pick is added.
+    expect(after?.spellPicks?.spellsKnown).toEqual(
+      expect.arrayContaining(["magic-missile", "shield"]),
+    );
+    expect(after?.spellPicks?.spellsKnown.length).toBe(3);
   });
 
   test("warriorAtL19 → L20 disables the button after confirm", async ({ page }) => {
