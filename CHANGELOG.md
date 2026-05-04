@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-05-04
+
+Collapsible spell-level sections in the shared spell picker. The per-level tab strip in `<SpellTabs>` is replaced with one collapsible section per level — Cantrips, 1st, 2nd, … — all expanded by default so the player sees the full accessible catalog at once. Click a header to collapse just that section; siblings stay open. In picker mode each header shows a "selected" badge counting the player's picks at that level, so a player can collapse a level they've finished picking from without losing context. Affects all three call sites (Approach step, Level-Up dialog, companion sheet) without changing their source — the public `<SpellTabs>` API is unchanged.
+
+### Added
+
+- **`<Collapsible>` shadcn-style primitive** in `components/ui/collapsible.tsx` (`Collapsible` / `CollapsibleTrigger` / `CollapsibleContent`) — a small wrapper around Base UI `Collapsible` matching the project's `base-nova` style. Defaults to `defaultOpen: true`, exposes `data-slot` attributes for scoped styling, and uses Base UI's CSS-grid open/close transition (`grid-rows-[0fr] ↔ [1fr]` with an inner `overflow-hidden` wrapper) for animated collapse. Lives in `components/ui/` rather than inside the spell picker because it's generic — future surfaces (boon/burden picker, grouped feature lists) can reuse it.
+- **Per-level "selected" badge in picker mode** — when `<SpellTabs>` is in `picker` mode and `mode.selected` overlaps a level's spells, the section header renders a second badge (primary fill, distinguishable from the secondary-fill total-count badge) with the count of selected spells in that level. Zero-count levels render no selected badge. Badge stays visible when the section is collapsed, so a player can compress a level they've finished picking from and still confirm their distribution at a glance.
+- **`e2e/spell-picker-collapse.spec.ts`** with 2 new tests: (a) sections start expanded with `aria-expanded="true"`, clicking a header toggles only that section while siblings stay open, a 2nd-level spell card stays visible while the 1st section is collapsed; (b) selecting a 1st-level spell adds the "selected" badge to the 1st header, collapsing the section preserves the badge. Suite total: **75 passing**.
+- **New `spell-picker-ui` capability spec** in `openspec/specs/spell-picker-ui/` — six requirements covering the collapsible layout, default-expanded state, click/keyboard toggling, total-count badge, picker-mode selected-count badge, and per-section scroll preservation.
+
+### Changed
+
+- **`<SpellTabs>` internals** are reworked from `Tabs` / `TabsList` / `TabsTrigger` / `TabsContent` to a flex column of `<Collapsible defaultOpen>` blocks, one per visible level. The `useMemo`'d `grouped` map, `sortedLevels`, and `visibleLevels` filter are unchanged. The `useState` / `active` / `setActive` pair is gone — collapse state is local to each `<Collapsible>` and not persisted. Per-section scroll (`max-h-72 overflow-y-auto`) is preserved verbatim, so a single very-large level still scrolls within its own block.
+- **Section header layout** — chevron (`lucide-react` `ChevronRight` rotated 90° on `data-panel-open`), level label (`"Cantrips"`, `"1st"`, …) in display font, then the existing total-count `<Badge variant="secondary">`, plus the new picker-mode selected-count `<Badge variant="default">`. The header is a `<button>` (Base UI `Collapsible.Trigger`) so Enter/Space toggle the section and `aria-expanded` reflects state without extra ARIA wiring.
+- **`<SpellTabs>` JSDoc** updated to describe the collapsible behavior — replaces the "Tabbed spell list" sentence with "Collapsible spell list, one section per level, all expanded by default".
+- **`SpellTabsProps.defaultLevel`** is now JSDoc-deprecated (`@deprecated since this change — the collapsible layout shows all levels; this prop is ignored.`). The prop is kept on the type to avoid breaking the three call sites that pass it; the component no longer reads it. A follow-up cleanup change can drop it entirely.
+- **E2E selectors migrated off `getByRole("tab", …)`** — `e2e/sheet.spec.ts` and `e2e/level-up.spec.ts` now look up the section triggers as `getByRole("button", { name: /^1st/ })` etc. `e2e/spell-cast.spec.ts:90` (the Magic Missile cast test) drops its tab click entirely — the 1st-level section is expanded by default, so Magic Missile is visible without a header click. The `sheet.spec.ts` "clicking a tab swaps the visible spell list" case is repurposed to assert that all known-spell levels render in one page (Magic Missile visible without any click).
+
+### Notes
+
+- **No schema changes.** No `Character` migration, no storage shape change, no `<SpellTabs>` API change at the call-site level. All three consumers (`approach-step`, `level-up-dialog`, `character-sheet`) get the new layout for free.
+- **Collapse state does not persist.** Closing and re-opening the level-up dialog (or remounting the sheet) resets every section to expanded. Local component state is intentional — the proposal calls out that players opening the dialog want to *see* the catalog before committing, and persisted collapse would force every player to re-expand on every visit.
+- **Printable sheet is unaffected.** It does not use `<SpellTabs>` and renders its own grouped list for print.
+
+[1.11.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.11.0
+
 ## [1.10.0] - 2026-05-04
 
 Tap-to-detail popover for feats and class features. Click any boon, burden, level-up feat, or class/approach feature on the sheet and a popover opens with the entry's name, source label, computed badges, structured effect (where encoded), and — for tracked features like Battle Wind, Action Surge, Indomitable, and Berserker Rage — a usage counter and a "Use" button that decrements via the same `live-state` pattern that powers spell slots and Hit Dice.
