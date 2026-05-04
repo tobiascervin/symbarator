@@ -6,6 +6,13 @@ import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/ty
 import { spendSlot, useFeature } from "@/lib/character/live-state";
 import type { FeatureSource } from "@/lib/character/features";
 import { SpellCastPopover } from "@/components/spells/spell-cast-popover";
+import { WeaponAttackPopover } from "@/components/sheet/weapon-attack-popover";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronRight } from "lucide-react";
 import {
   FeatTapPopover,
   type TappedEntry,
@@ -17,6 +24,7 @@ import { CLASS_BY_ID, approachById } from "@/data/classes";
 import { SKILL_BY_ID } from "@/data/skills";
 import { SPELL_BY_ID } from "@/data/spells";
 import {
+  computeArmorClass,
   computeFinalAbilities,
   computeProficiencyBonus,
   computeSavingThrows,
@@ -25,6 +33,7 @@ import {
   computeInitiative,
   formatMod,
 } from "@/lib/character/compute";
+import { resolveCharacterInventory, resolveWeaponAttack } from "@/lib/character/equipment";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { Parchment } from "@/components/theme/parchment";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
@@ -38,7 +47,7 @@ import {
   SpellSlotPips,
 } from "@/components/sheet/companion-panels";
 import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
-import type { SpellLevel } from "@/lib/character/types";
+import type { SpellLevel, WeaponDef } from "@/lib/character/types";
 import { cn } from "@/lib/utils";
 
 export function CharacterSheet({
@@ -64,6 +73,8 @@ export function CharacterSheet({
   const skills = computeSkillScores(c);
   const spell = computeSpellcasting(c);
   const initiative = computeInitiative(c);
+  const armorClass = computeArmorClass(c);
+  const inventory = resolveCharacterInventory(c);
 
   // Companion-mode tap state for the FeatTapPopover. Non-null = open.
   const [tapped, setTapped] = useState<TappedEntry | null>(null);
@@ -395,14 +406,29 @@ export function CharacterSheet({
         </div>
 
         <div className="space-y-6">
-          {/* Stat block */}
+          {/* Combat — stats, weapons, and armor live together. */}
           <Parchment>
             <SectionHeader>Combat</SectionHeader>
             <dl className="text-sm space-y-2 text-[#1d1814]">
               <Stat label="Initiative" value={formatMod(initiative)} />
+              <Stat label="Armor Class" value={`${armorClass.ac}`} />
               <Stat label="Speed" value={`${origin?.speed ?? 30} ft.`} />
               <Stat label="Proficiency Bonus" value={`+${profBonus}`} />
             </dl>
+
+            {inventory.weapons.length > 0 && (
+              <div className="mt-4">
+                <SubSectionHeader>Weapons</SubSectionHeader>
+                <SheetWeapons character={c} weapons={inventory.weapons} />
+              </div>
+            )}
+
+            {(inventory.armor.length > 0 || inventory.shield) && (
+              <div className="mt-4">
+                <SubSectionHeader>Armor</SubSectionHeader>
+                <SheetArmor armor={inventory.armor} shield={inventory.shield} />
+              </div>
+            )}
           </Parchment>
 
           {/* Corruption — interactive +/- adjusters with threshold readout. */}
@@ -435,37 +461,35 @@ export function CharacterSheet({
             </div>
           </Parchment>
 
-          {/* Equipment */}
-          <Parchment>
-            <SectionHeader>Equipment</SectionHeader>
-            <div className="text-sm text-[#1d1814] space-y-2">
-              {cls && c.classEquipmentPicks.length > 0 && (
-                <div>
-                  <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
-                    From class
+          {/* Equipment — non-weapons, non-armor only. Weapons and armor live
+              under the Combat parchment now. */}
+          {(inventory.other.length > 0 || bg) && (
+            <Parchment>
+              <SectionHeader>Equipment</SectionHeader>
+              <div className="text-sm text-[#1d1814] space-y-2">
+                {inventory.other.length > 0 && (
+                  <div>
+                    <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
+                      Gear
+                    </div>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {inventory.other.map((line, i) => (
+                        <li key={i}>{line}</li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="list-disc list-inside space-y-0.5">
-                    {cls.startingEquipment.map((line, i) => {
-                      const opts = line.split(/\bOR\b/i).map((s) =>
-                        s.replace(/^\s*\([a-z]\)\s*/i, "").trim(),
-                      );
-                      return (
-                        <li key={i}>{opts[c.classEquipmentPicks[i] ?? 0] ?? line}</li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-              {bg && (
-                <div>
-                  <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
-                    From background
+                )}
+                {bg && (
+                  <div>
+                    <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
+                      From background
+                    </div>
+                    <p className="italic text-[#3a322a]">{bg.equipment}</p>
                   </div>
-                  <p className="italic text-[#3a322a]">{bg.equipment}</p>
-                </div>
-              )}
-            </div>
-          </Parchment>
+                )}
+              </div>
+            </Parchment>
+          )}
         </div>
       </div>
 
@@ -523,6 +547,44 @@ function Feature({
       <p className="font-display tracking-wide text-[#1d1814]">{title}</p>
       <p className="text-[#3a322a]">{children}</p>
     </div>
+  );
+}
+
+function SubSectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="font-display tracking-widest text-[10px] uppercase text-[#5a4d2f] border-b border-[#9a8a6b]/40 pb-1 mb-2">
+      {children}
+    </div>
+  );
+}
+
+function SheetArmor({
+  armor,
+  shield,
+}: {
+  armor: ReadonlyArray<import("@/lib/character/types").ArmorDef>;
+  shield: import("@/lib/character/types").ArmorDef | null;
+}) {
+  return (
+    <ul className="space-y-1 text-sm text-[#1d1814]">
+      {armor.map((a) => (
+        <li key={a.id} className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
+          <span>{a.name}</span>
+          <span className="font-display text-xs text-[#5a4d2f]">
+            AC {a.ac.base}
+            {a.ac.addDex
+              ? ` + Dex${a.ac.dexMax !== undefined ? ` (max +${a.ac.dexMax})` : ""}`
+              : ""}
+          </span>
+        </li>
+      ))}
+      {shield && (
+        <li className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
+          <span>{shield.name}</span>
+          <span className="font-display text-xs text-[#5a4d2f]">+{shield.ac.base} AC</span>
+        </li>
+      )}
+    </ul>
   );
 }
 
@@ -608,4 +670,95 @@ function SheetSpellbook({
       />
     </>
   );
+}
+
+const WEAPON_GROUP_LABEL: Record<string, string> = {
+  melee: "Melee",
+  ranged: "Ranged",
+  alchemical: "Alchemical",
+  siege: "Siege",
+};
+
+function weaponGroup(category: WeaponDef["category"]): keyof typeof WEAPON_GROUP_LABEL {
+  if (category === "simple-melee" || category === "martial-melee") return "melee";
+  if (category === "simple-ranged" || category === "martial-ranged") return "ranged";
+  return category;
+}
+
+function SheetWeapons({
+  character,
+  weapons,
+}: {
+  character: Character;
+  weapons: ReadonlyArray<WeaponDef>;
+}) {
+  const [tappedWeapon, setTappedWeapon] = useState<WeaponDef | null>(null);
+
+  // Group weapons by display category, preserving inventory order within
+  // each group. Empty groups are skipped.
+  const grouped = new Map<string, WeaponDef[]>();
+  for (const w of weapons) {
+    const g = weaponGroup(w.category);
+    const list = grouped.get(g) ?? [];
+    list.push(w);
+    grouped.set(g, list);
+  }
+  const orderedGroups = ["melee", "ranged", "alchemical", "siege"].filter((g) =>
+    grouped.has(g),
+  );
+
+  return (
+    <>
+      <div className="w-full flex flex-col gap-2">
+        {orderedGroups.map((g) => {
+          const list = grouped.get(g)!;
+          return (
+            <Collapsible key={g}>
+              <CollapsibleTrigger>
+                <span className="flex items-center gap-2 min-w-0">
+                  <ChevronRight className="size-4 shrink-0 transition-transform group-data-[panel-open]/collapsible-trigger:rotate-90" />
+                  <span className="font-display text-sm">{WEAPON_GROUP_LABEL[g]}</span>
+                </span>
+                <span className="ml-auto text-xs text-muted-foreground">{list.length}</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid sm:grid-cols-2 gap-2 pt-2">
+                  {list.map((w) => {
+                    const r = resolveWeaponAttack(character, w, "1h");
+                    return (
+                      <button
+                        key={w.id}
+                        type="button"
+                        aria-label={`Attack with ${w.name}`}
+                        onClick={() => setTappedWeapon(w)}
+                        className="rounded-md border border-border p-3 text-left transition-colors cursor-pointer hover:border-ring/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      >
+                        <span className="font-display text-base text-foreground block">{w.name}</span>
+                        <span className="block text-xs text-muted-foreground mt-1">
+                          {signedNum(r.attackMod)} to hit · {r.damageDice.count}d
+                          {r.damageDice.faces} {signedNum(r.damageMod)} {w.damageType}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+      </div>
+      <WeaponAttackPopover
+        open={tappedWeapon !== null}
+        onOpenChange={(o) => {
+          if (!o) setTappedWeapon(null);
+        }}
+        weapon={tappedWeapon}
+        character={character}
+      />
+    </>
+  );
+}
+
+function signedNum(n: number): string {
+  return n >= 0 ? `+${n}` : `${n}`;
 }

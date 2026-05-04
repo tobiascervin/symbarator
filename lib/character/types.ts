@@ -362,10 +362,11 @@ export interface BurdenDef {
 
 export type SpellLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
-/** Damage / healing dice expression. `flat` is an optional flat add (e.g. +5). */
+/** Damage / healing dice expression. `flat` is an optional flat add (e.g. +5).
+ *  `faces: 1` represents flat damage (e.g. PG's Blowpipe deals "1 piercing"). */
 export interface DiceExpression {
   count: number;
-  faces: 4 | 6 | 8 | 10 | 12;
+  faces: 1 | 4 | 6 | 8 | 10 | 12;
   flat?: number;
 }
 
@@ -443,6 +444,92 @@ export interface SpellDef {
    * and explicit utility spells have no scaling.
    */
   scaling?: SpellScaling;
+}
+
+// ---------------------------------------------------------------------------
+// Equipment — weapons and armor (PG p. 162–171).
+// ---------------------------------------------------------------------------
+
+/** Coin payment in any of the three Ambrian denominations (PG p. 160). */
+export interface Coin {
+  thaler?: number;
+  shilling?: number;
+  orteg?: number;
+}
+
+export type WeaponCategory =
+  | "simple-melee"
+  | "simple-ranged"
+  | "martial-melee"
+  | "martial-ranged"
+  | "alchemical"
+  | "siege";
+
+/**
+ * Boolean weapon properties (no parameters). The cast popover and attack
+ * resolver inspect these via `flags.has("finesse")`. Symbaroum-specific
+ * properties (`balanced`, `deep-impact`, `ensnaring`, `massive`,
+ * `restraining`, `returning`, `concealed`) are catalog-only in v1 — the
+ * popover lists them as text without modeling their crit / restraint rules.
+ */
+export type WeaponProperty =
+  | "finesse"
+  | "light"
+  | "heavy"
+  | "two-handed"
+  | "loading"
+  | "reach"
+  | "deep-impact"
+  | "ensnaring"
+  | "massive"
+  | "restraining"
+  | "returning"
+  | "siege"
+  | "special"
+  | "balanced"
+  | "concealed"
+  | "immobile";
+
+/** Parameterized weapon properties — versatile dice, ranges, area effects. */
+export type WeaponPropertyData =
+  | { kind: "thrown"; range: [number, number] }
+  | { kind: "ammunition"; range: [number, number] }
+  | { kind: "range"; range: [number, number] }
+  | { kind: "versatile"; twoHandedDamage: DiceExpression }
+  | { kind: "area"; shape: "radius" | "cone" | "line"; size: number };
+
+export interface WeaponDef {
+  id: string;
+  name: string;
+  category: WeaponCategory;
+  cost: Coin;
+  /** Weight in pounds. 0 for weightless (sling). */
+  weight: number;
+  /** Primary one-handed damage. Versatile two-handed dice live in `properties`. */
+  damage: DiceExpression;
+  damageType: DamageType;
+  flags: ReadonlySet<WeaponProperty>;
+  /** Properties carrying parameters (range, versatile, area). */
+  properties?: ReadonlyArray<WeaponPropertyData>;
+  description?: string;
+}
+
+export type ArmorCategory = "light" | "medium" | "heavy" | "shield";
+
+export type ArmorProperty = "concealable" | "cumbersome" | "noisy";
+
+export interface ArmorDef {
+  id: string;
+  name: string;
+  category: ArmorCategory;
+  cost: Coin;
+  weight: number;
+  /** AC formula. For shields, `base` is the additive bonus and `addDex` is false. */
+  ac: { base: number; addDex: boolean; dexMax?: number };
+  flags: ReadonlySet<ArmorProperty>;
+  /** Weighty (N) — minimum STR required, or speed reduces by 10 ft. */
+  weightyStrMin?: number;
+  description?: string;
 }
 
 // ---------------------------------------------------------------------------

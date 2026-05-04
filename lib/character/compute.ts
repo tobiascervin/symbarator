@@ -309,3 +309,9 @@ export function computeFeatures(c: Character): Array<{ source: string; name: str
   }
   return out;
 }
+
+/**
+ * Thin re-export so the sheet doesn't need to import `lib/character/equipment.ts`
+ * directly. Kept here alongside the rest of the per-character compute helpers.
+ */
+export { computeAC as computeArmorClass } from "./equipment";

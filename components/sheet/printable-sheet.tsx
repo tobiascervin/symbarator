@@ -17,6 +17,7 @@ import { SKILL_BY_ID } from "@/data/skills";
 import { SPELL_BY_ID } from "@/data/spells";
 import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 import {
+  computeArmorClass,
   computeFinalAbilities,
   computeProficiencyBonus,
   computeCorruptionThreshold,
@@ -26,6 +27,7 @@ import {
   computeInitiative,
   formatMod,
 } from "@/lib/character/compute";
+import { resolveCharacterInventory, resolveWeaponAttack } from "@/lib/character/equipment";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { APP_VERSION } from "@/lib/version";
 import { cn } from "@/lib/utils";
@@ -52,6 +54,8 @@ export function PrintableSheet({ character: c }: { character: Character }) {
 
   const finals = computeFinalAbilities(c);
   const profBonus = computeProficiencyBonus(c);
+  const armorClass = computeArmorClass(c);
+  const inventory = resolveCharacterInventory(c);
   const threshold = computeCorruptionThreshold(c);
   const saves = computeSavingThrows(c);
   const skills = computeSkillScores(c);
@@ -79,11 +83,12 @@ export function PrintableSheet({ character: c }: { character: Character }) {
 
       {/* Combat block */}
       <Section heading="Combat" avoidBreak>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 text-sm">
+        <div className="grid grid-cols-3 sm:grid-cols-7 gap-3 text-sm">
           <Pill label="Max HP" value={c.maxHp || "—"} />
           <Pill label="Hit Die" value={`d${origin?.hitDie ?? cls?.fallbackHitDie ?? 8}`} />
           <Pill label="Prof Bonus" value={`+${profBonus}`} />
           <Pill label="Initiative" value={formatMod(initiative)} />
+          <Pill label="AC" value={armorClass.ac} />
           <Pill label="Speed" value={`${origin?.speed ?? 30} ft`} />
           <Pill label="Corruption Thr." value={threshold} />
         </div>
@@ -320,22 +325,67 @@ export function PrintableSheet({ character: c }: { character: Character }) {
       {/* Equipment */}
       <Section heading="Equipment" avoidBreak>
         <div className="text-sm space-y-2">
-          {cls && c.classEquipmentPicks.length > 0 && (
+          {inventory.weapons.length > 0 && (
             <div>
               <p className="font-display text-[10px] uppercase tracking-widest text-[#5a4d2f] mb-1">
-                From class
+                Weapons
+              </p>
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-[#1d1814]/40">
+                    <th className="text-left font-display tracking-widest uppercase text-[9px] py-1">Name</th>
+                    <th className="text-right font-display tracking-widest uppercase text-[9px] py-1 pl-2">Atk</th>
+                    <th className="text-right font-display tracking-widest uppercase text-[9px] py-1 pl-2">Damage</th>
+                    <th className="text-left font-display tracking-widest uppercase text-[9px] py-1 pl-2">Properties</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventory.weapons.map((w) => {
+                    const r = resolveWeaponAttack(c, w, "1h");
+                    const props = [...w.flags];
+                    return (
+                      <tr key={w.id} className="border-b border-[#1d1814]/15">
+                        <td className="py-1 font-display">{w.name}</td>
+                        <td className="py-1 pl-2 text-right">{formatMod(r.attackMod)}</td>
+                        <td className="py-1 pl-2 text-right whitespace-nowrap">
+                          {r.damageDice.count}d{r.damageDice.faces} {formatMod(r.damageMod)} {w.damageType}
+                        </td>
+                        <td className="py-1 pl-2 text-[10px] text-[#5a4d2f]">{props.join(", ") || "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {(inventory.armor.length > 0 || inventory.shield) && (
+            <div>
+              <p className="font-display text-[10px] uppercase tracking-widest text-[#5a4d2f] mb-1">
+                Armor
               </p>
               <ul className="list-disc list-inside space-y-0.5">
-                {cls.startingEquipment.map((line, i) => {
-                  const opts = line
-                    .split(/\bOR\b/i)
-                    .map((s) => s.replace(/^\s*\([a-z]\)\s*/i, "").trim());
-                  return (
-                    <li key={i}>
-                      {opts[c.classEquipmentPicks[i] ?? 0] ?? line}
-                    </li>
-                  );
-                })}
+                {inventory.armor.map((a) => (
+                  <li key={a.id}>
+                    {a.name} <span className="text-[10px] text-[#5a4d2f]">(AC {a.ac.base}{a.ac.addDex ? ` + Dex${a.ac.dexMax !== undefined ? ` max ${a.ac.dexMax}` : ""}` : ""})</span>
+                  </li>
+                ))}
+                {inventory.shield && (
+                  <li>
+                    {inventory.shield.name} <span className="text-[10px] text-[#5a4d2f]">(+{inventory.shield.ac.base} AC)</span>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+          {inventory.other.length > 0 && (
+            <div>
+              <p className="font-display text-[10px] uppercase tracking-widest text-[#5a4d2f] mb-1">
+                Gear
+              </p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {inventory.other.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
               </ul>
             </div>
           )}
