@@ -1,0 +1,19 @@
+## 1. New spec file
+
+- [x] 1.1 Create `e2e/origin-asi.spec.ts` with three tests inside a single `test.describe("Origin ASI propagation")`.
+- [x] 1.2 Test 1 — "Abducted Human fixed + floating": navigate from `/`, click "Forge a New Hero", click the Abducted Human card, click the first floating "+" button twice (STR), Continue, then on `/builder/abilities` assert the STR card shows "base 8 +2" and total "10", DEX shows "base 10 +1" total "11", WIS shows "base 14 +1" total "15", and INT/CHA show no bonus addend.
+- [x] 1.3 Test 2 — "Human sub-choice toggle": pick Human, click the Ambrian sub-choice tile, allocate the +1 floating to CHA, Continue, on the abilities step assert STR "+2", INT "+1", CHA "+1". Navigate back via the wizard's back control to `/builder/origin`, click the Barbarian tile, return to abilities, assert INT bonus is gone and WIS shows "+1". *(Wrapped in `test.fail()` because the sub-choice ASI bug surfaces — see 3.4.)*
+- [x] 1.4 Test 3 — "Floating allocation gate": pick Abducted Human, click Continue without allocating, assert the URL is still `/builder/origin` and the toast text matches the validator (e.g. "Allocate all floating ability bonuses" or whatever `validateStep("origin", ...)` returns). Allocate the +2, Continue, assert URL is `/builder/background`. *(Validator's actual message: `Allocate exactly 2 bonus points from your origin.` — asserted verbatim against `Allocate exactly 2 bonus points` for resilience to the count-pluralization edge.)*
+
+## 2. Helpers and locators
+
+- [x] 2.1 Reuse `e2e/builder.spec.ts`'s pattern for the floating "+" buttons: `page.getByRole("button", { name: "+", exact: true })` indexed by `ABILITY_ORDER`. *(Indexed via an `ABILITY_INDEX` map for readability — `plusButtons.nth(ABILITY_INDEX.str)` instead of `.first()`.)*
+- [x] 2.2 For ability cards, scope assertions per ability with `page.locator` rooted at the card containing the ability label (e.g. `page.locator("div").filter({ hasText: /^STR/ })`) — keep the matcher tight so adjacent abilities don't bleed. *(Helper `finalCell(page, label)` scopes by the `data-slot="card"` containing "Final Ability Scores", then filters its inner `div.rounded-md.border` cells by an exact-match label child. Origin cards use `originCard(page, name)` keyed off `data-slot="card-title"` since their `role="button"` accessible name includes flavor + ASI summary.)*
+- [x] 2.3 Confirm the actual toast text by reading `lib/character/validation.ts` for the origin step's error message before hard-coding it in the gate test. *(Confirmed `Allocate exactly ${target} bonus point${plural} from your origin.`; the test matches against `Allocate exactly 2 bonus points` for Abducted Human's `count: 1, size: 2` → `target: 2`.)*
+
+## 3. Verification
+
+- [x] 3.1 `npm run lint` passes. *(8 problems, all pre-existing on the v1.13.0 baseline; this change adds zero new ones.)*
+- [x] 3.2 `npm run test:e2e -- e2e/origin-asi.spec.ts` passes locally. *(3/3 — Test 1 passes, Test 2 fails as `test.fail()` expects, Test 3 passes.)*
+- [x] 3.3 Full `npm run test:e2e` still passes (no regressions in the existing builder happy path). *(86 passing, including the existing happy path.)*
+- [x] 3.4 If Test 2's sub-choice assertion fails because the abilities step does not currently fold sub-choice ASI into its displayed bonus, mark the failure clearly in the run output and open a follow-up `/opsx:propose` to fix the abilities step (do not weaken the test to mask the bug). *(Test 2 lands red as design.md anticipated. Wrapped it in `test.fail()` so CI stays green now, with a TODO comment pointing at the proposed follow-up `/opsx:propose abilities-step-subchoice-asi`. When the fix ships and Test 2 starts passing, Playwright will flag the test as "expected to fail but passed" — forcing whoever lands the fix to flip `test.fail` back to a regular `test()`. Assertions are unchanged from the design's expected behavior — no masking.)*
