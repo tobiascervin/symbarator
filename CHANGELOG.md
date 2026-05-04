@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-05-04
+
+E2E coverage for origin ASI propagation through the wizard. The single most rules-load-bearing piece of math in the L1 builder — origin fixed bonuses, floating allocations, and sub-choice ASI flowing into the abilities step's "Final Ability Scores" display — is now exercised end-to-end against the live wizard (no LocalStorage seed). One of the three new tests deliberately lands red as `test.fail()`, surfacing a real bug in `abilities-step.tsx` that the design doc anticipated and the next release will fix.
+
+### Added
+
+- **`e2e/origin-asi.spec.ts`** with three Playwright tests under `Origin ASI propagation`:
+  - **Fixed + floating** — Abducted Human (fixed `{dex: 1, wis: 1}` + 1×+2 floating), allocates the +2 to STR, walks the wizard to `/builder/abilities` on Standard Array, asserts STR shows `base 8 +2` (total 10), DEX `base 10 +1` (11), WIS `base 14 +1` (15), and CON/INT/CHA have no bonus addend on their base lines.
+  - **Sub-choice toggle** *(`test.fail()`)* — Human + Ambrian (`{int: 1}` sub-choice ASI) + 1×+1 floating to CHA, asserts STR/INT/CHA bonuses on the abilities step, then navigates back to `/builder/origin`, switches to Barbarian (`{wis: 1}`), and re-asserts. The test asserts the *correct* expected behavior; today's `abilities-step.tsx` reads only `origin.asi.fixed` and `originAsiAllocation` (not `subchoice.asi`), so the assertion fails as expected — wrapped in `test.fail()` to keep CI green. When the follow-up fix lands, this test will start passing and Playwright will flag it as "expected to fail but passed", forcing whoever shipped the fix to flip it back to a regular `test()`.
+  - **Floating-allocation gate** — picks Abducted Human, clicks Continue without allocating, asserts the URL stays on `/builder/origin` and the validator's `Allocate exactly 2 bonus points` toast appears; allocates and re-clicks Continue, asserts `/builder/background`.
+- **Three test helpers** in the same file: `finalCell(page, label)` scopes assertions to the "Final Ability Scores" card by `data-slot="card"`; `originCard(page, name)` resolves origin cards by their `data-slot="card-title"` since `role="button"` accessible names include flavor + ASI summary; `applyStandardArray(page)` round-trips Manual → Standard Array tabs to load the array values, since `setMethod`'s side-effect only fires on tab change (the default `draft.abilities` is all 10s).
+- Suite total: **86 passing** (up from 83 at the v1.13.0 baseline).
+
+### Notes
+
+- **No production code change.** This release is pure test-coverage. The known sub-choice-ASI bug surfaced by the second test is intentionally left to a follow-up change rather than fixed here.
+- **`test.fail()` as a regression tripwire** — Playwright treats a passing `test.fail()` as a failure. Once the abilities-step fix ships, the next CI run will turn red until someone removes the `.fail()` annotation, validating that the fix actually resolved the bug the test was tracking.
+
+[1.14.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.14.0
+
 ## [1.13.0] - 2026-05-04
 
 The level-up dialog's optional "swap a known spell" picker is now reversible — pick a swap target by mistake and you can back out without losing the rest of your level-up answers. Adds a ghost-variant `Clear swap` button beside the two swap selects that resets both fields together. Visible only when one or both swap fields are set, so the default presentation is unchanged.
