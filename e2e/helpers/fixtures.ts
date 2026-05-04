@@ -41,6 +41,7 @@ function makeBase(overrides: Partial<Character> & { id: string }): Character {
     abilities: { str: 15, dex: 14, con: 13, int: 12, wis: 10, cha: 8 },
     abilityMethod: "standard-array",
     classEquipmentPicks: [0, 0, 0, 0],
+    inventoryOverrides: { added: [], removed: [] },
     boons: [],
     burdens: [],
     boonAbilityChoices: {},

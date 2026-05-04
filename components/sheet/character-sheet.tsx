@@ -7,12 +7,14 @@ import { spendSlot, useFeature } from "@/lib/character/live-state";
 import type { FeatureSource } from "@/lib/character/features";
 import { SpellCastPopover } from "@/components/spells/spell-cast-popover";
 import { WeaponAttackPopover } from "@/components/sheet/weapon-attack-popover";
+import { InventoryModal } from "@/components/sheet/inventory-modal";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Backpack, ChevronRight } from "lucide-react";
 import {
   FeatTapPopover,
   type TappedEntry,
@@ -78,6 +80,7 @@ export function CharacterSheet({
 
   // Companion-mode tap state for the FeatTapPopover. Non-null = open.
   const [tapped, setTapped] = useState<TappedEntry | null>(null);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   function openTap(feature: FeatureDef, source: FeatureSource, badges?: ReadonlyArray<FeatCardBadge>) {
     setTapped({ feature, source, badges });
   }
@@ -408,7 +411,15 @@ export function CharacterSheet({
         <div className="space-y-6">
           {/* Combat — stats, weapons, and armor live together. */}
           <Parchment>
-            <SectionHeader>Combat</SectionHeader>
+            <SectionHeader
+              action={
+                onChange ? (
+                  <RucksackButton onClick={() => setInventoryOpen(true)} />
+                ) : null
+              }
+            >
+              Combat
+            </SectionHeader>
             <dl className="text-sm space-y-2 text-[#1d1814]">
               <Stat label="Initiative" value={formatMod(initiative)} />
               <Stat label="Armor Class" value={`${armorClass.ac}`} />
@@ -463,10 +474,23 @@ export function CharacterSheet({
 
           {/* Equipment — non-weapons, non-armor only. Weapons and armor live
               under the Combat parchment now. */}
-          {(inventory.other.length > 0 || bg) && (
+          {(inventory.other.length > 0 || bg || onChange) && (
             <Parchment>
-              <SectionHeader>Equipment</SectionHeader>
+              <SectionHeader
+                action={
+                  onChange ? (
+                    <RucksackButton onClick={() => setInventoryOpen(true)} />
+                  ) : null
+                }
+              >
+                Equipment
+              </SectionHeader>
               <div className="text-sm text-[#1d1814] space-y-2">
+                {inventory.other.length === 0 && !bg && onChange && (
+                  <p className="italic text-[#5a4d2f] text-xs">
+                    No gear yet — tap the rucksack to add an item.
+                  </p>
+                )}
                 {inventory.other.length > 0 && (
                   <div>
                     <div className="font-display text-xs uppercase tracking-widest text-[#5a4d2f] mb-1">
@@ -506,16 +530,51 @@ export function CharacterSheet({
           // Don't close the popover — let the player see the decremented count.
         }}
       />
+
+      {/* Inventory management modal — opened by either rucksack icon
+          (Equipment heading or Combat heading). Mounted once. */}
+      {onChange && (
+        <InventoryModal
+          open={inventoryOpen}
+          onOpenChange={setInventoryOpen}
+          character={c}
+          onChange={handleChange}
+        />
+      )}
     </div>
   );
 }
 
-function SectionHeader({ children }: { children: React.ReactNode }) {
+function RucksackButton({ onClick }: { onClick(): void }) {
   return (
-    <div className="border-b border-[#9a8a6b] pb-1 mb-3">
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      aria-label="Manage inventory"
+      onClick={onClick}
+      className="border-[#9a8a6b] bg-[#f5ecd6] text-[#3a322a] hover:bg-[#e8d9b3] hover:text-[#1d1814]"
+    >
+      <Backpack className="size-3.5" />
+      Inventory
+    </Button>
+  );
+}
+
+function SectionHeader({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  /** Optional right-aligned slot — e.g. the rucksack icon next to "Equipment". */
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between border-b border-[#9a8a6b] pb-1 mb-3">
       <h2 className="font-display text-xs uppercase tracking-[0.4em] text-[#7a1f1f]">
         {children}
       </h2>
+      {action}
     </div>
   );
 }

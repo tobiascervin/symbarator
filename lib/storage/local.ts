@@ -117,6 +117,19 @@ export function migrateCharacter(raw: unknown): Character {
   ) {
     character.featureUses = {};
   }
+  // Backfill `inventoryOverrides` for pre-1.15 saves. Empty deltas mean the
+  // resolved inventory matches the original class-pick derivation.
+  if (
+    typeof character.inventoryOverrides !== "object" ||
+    character.inventoryOverrides === null ||
+    Array.isArray(character.inventoryOverrides)
+  ) {
+    character.inventoryOverrides = { added: [], removed: [] };
+  } else {
+    const o = character.inventoryOverrides as { added?: unknown; removed?: unknown };
+    if (!Array.isArray(o.added)) o.added = [];
+    if (!Array.isArray(o.removed)) o.removed = [];
+  }
 
   return character;
 }

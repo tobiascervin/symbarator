@@ -599,6 +599,14 @@ export interface Character {
   abilityMethod: "standard-array" | "point-buy" | "manual";
   /** Equipment options the player picked from the class table; one index per (a)/(b)/(c) line. */
   classEquipmentPicks: number[];
+  /**
+   * Post-creation inventory deltas. `added` items are appended to the
+   * resolved inventory (catalog match → weapons/armor/shield, otherwise
+   * free-text gear). `removed` items are filtered out of the class-pick
+   * derivation, one occurrence per entry, case-insensitive. Both arrays
+   * round-trip through JSON unchanged.
+   */
+  inventoryOverrides: { added: string[]; removed: string[] };
   /** Boons (typically 0 at L1; some campaigns let players take one for free). */
   boons: string[];
   burdens: string[];

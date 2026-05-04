@@ -39,66 +39,96 @@ export interface ResolvedInventory {
  */
 export function resolveCharacterInventory(c: Character): ResolvedInventory {
   const cls = CLASS_BY_ID[c.classId];
-  if (!cls) return { weapons: [], armor: [], shield: null, other: [] };
+
+  // Build the raw token list: class-pick derivation, minus removed
+  // overrides (one occurrence per entry, case-insensitive), plus added
+  // overrides concatenated at the end.
+  const classTokens: string[] = [];
+  if (cls) {
+    for (let i = 0; i < cls.startingEquipment.length; i++) {
+      const line = cls.startingEquipment[i];
+      const pickIdx = c.classEquipmentPicks[i] ?? 0;
+      const opts = line.split(/\bOR\b/i).map((s) =>
+        s.replace(/^\s*\([a-z]\)\s*/i, "").trim(),
+      );
+      const chosen = opts[pickIdx] ?? line;
+      const tokens = chosen
+        .split(/,| and /i)
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+      classTokens.push(...tokens);
+    }
+  }
+
+  const removed = [...(c.inventoryOverrides?.removed ?? [])].map((r) => r.toLowerCase());
+  const survived: string[] = [];
+  for (const t of classTokens) {
+    const idx = removed.indexOf(t.toLowerCase());
+    if (idx >= 0) {
+      removed.splice(idx, 1); // consume one occurrence
+    } else {
+      survived.push(t);
+    }
+  }
+  const allTokens = [...survived, ...(c.inventoryOverrides?.added ?? [])];
 
   const weapons: WeaponDef[] = [];
   const armor: ArmorDef[] = [];
   let shield: ArmorDef | null = null;
   const other: string[] = [];
 
-  for (let i = 0; i < cls.startingEquipment.length; i++) {
-    const line = cls.startingEquipment[i];
-    const pickIdx = c.classEquipmentPicks[i] ?? 0;
-    const opts = line.split(/\bOR\b/i).map((s) =>
-      s.replace(/^\s*\([a-z]\)\s*/i, "").trim(),
-    );
-    const chosen = opts[pickIdx] ?? line;
-
-    // Tokenize on commas and " and ". Trim each piece, drop common ammo
-    // qualifiers like "20 arrows" or "10 bolts" (numeric prefix + ammo word).
-    const tokens = chosen
-      .split(/,| and /i)
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    for (const tokenRaw of tokens) {
-      // Strip numeric ammo qualifiers ("20 arrows", "10 bolts", "30 sling bullets").
-      const ammoMatch = tokenRaw.match(/^\d+\s+(arrows|bolts|bullets|darts|stones|javelins)$/i);
-      if (ammoMatch) {
-        other.push(tokenRaw);
-        continue;
-      }
-
-      // Normalize: lowercase, strip leading "a "/"an "/"the "/"two "/"three "
-      // and trailing " armor" so class equipment lines like "a quarterstaff",
-      // "two handaxes", or "studded leather armor" reach the catalog cleanly.
-      let normalized = tokenRaw.toLowerCase().trim();
-      normalized = normalized
-        .replace(/^(a |an |the |two |three |four )/i, "")
-        .replace(/ armor$/i, "");
-
-      // Try the catalog directly; then a small alias map for the
-      // "Crossbow, light" comma-form vs "light crossbow" prose form;
-      // then plural → singular fallback for known catalog names.
-      const aliasName = CATALOG_ALIASES[normalized];
-      const lookupKey = aliasName ?? normalized;
-
-      const w = WEAPON_BY_NAME[lookupKey] ?? WEAPON_BY_NAME[depluralize(lookupKey)];
-      if (w) {
-        weapons.push(w);
-        continue;
-      }
-      const a = ARMOR_BY_NAME[lookupKey] ?? ARMOR_BY_NAME[depluralize(lookupKey)];
-      if (a) {
-        if (a.category === "shield") {
-          if (!shield) shield = a;
-        } else {
-          armor.push(a);
-        }
-        continue;
-      }
+  for (const tokenRaw of allTokens) {
+    // Strip numeric ammo qualifiers ("20 arrows", "10 bolts", "30 sling bullets").
+    const ammoMatch = tokenRaw.match(/^\d+\s+(arrows|bolts|bullets|darts|stones|javelins)$/i);
+    if (ammoMatch) {
       other.push(tokenRaw);
+      continue;
     }
+
+    // Normalize: lowercase + strip leading "a "/"an "/"the "/"two "/"three ".
+    // Try the catalog with this form first — catalog items whose name
+    // contains " armor" (e.g. "Leather armor", "Crow Armor", "Laminated
+    // Armor", "Field Armor") would mismatch if we stripped the suffix
+    // unconditionally. Fall back to the strip-" armor" form only on miss
+    // so class-pick lines like "studded leather armor" still resolve to
+    // the unsuffixed catalog name "Studded Leather".
+    const baseNormalized = tokenRaw.toLowerCase().trim()
+      .replace(/^(a |an |the |two |three |four )/i, "");
+    const strippedNormalized = baseNormalized.replace(/ armor$/i, "");
+
+    // Try a sequence of candidate keys: aliased → as-is → stripped.
+    const candidates: string[] = [];
+    const baseAlias = CATALOG_ALIASES[baseNormalized];
+    if (baseAlias) candidates.push(baseAlias);
+    candidates.push(baseNormalized);
+    if (strippedNormalized !== baseNormalized) {
+      const stripAlias = CATALOG_ALIASES[strippedNormalized];
+      if (stripAlias) candidates.push(stripAlias);
+      candidates.push(strippedNormalized);
+    }
+
+    let matchedWeapon: WeaponDef | undefined;
+    let matchedArmor: ArmorDef | undefined;
+    for (const key of candidates) {
+      matchedWeapon = WEAPON_BY_NAME[key] ?? WEAPON_BY_NAME[depluralize(key)];
+      if (matchedWeapon) break;
+      matchedArmor = ARMOR_BY_NAME[key] ?? ARMOR_BY_NAME[depluralize(key)];
+      if (matchedArmor) break;
+    }
+
+    if (matchedWeapon) {
+      weapons.push(matchedWeapon);
+      continue;
+    }
+    if (matchedArmor) {
+      if (matchedArmor.category === "shield") {
+        if (!shield) shield = matchedArmor;
+      } else {
+        armor.push(matchedArmor);
+      }
+      continue;
+    }
+    other.push(tokenRaw);
   }
 
   return { weapons, armor, shield, other };
