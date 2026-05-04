@@ -33,6 +33,12 @@ export function AbilitiesStep({ draftHook }: { draftHook: DraftState }) {
   const origin = ORIGIN_BY_ID[draft.originId];
   const fixed = origin?.asi.fixed ?? {};
   const floating = draft.originAsiAllocation;
+  // Keep the origin portion of this bonus aligned with `computeFinalAbilities`
+  // in lib/character/compute.ts — fixed + floating + sub-choice. Boons and
+  // burdens are picked on a later step, so they're not folded in here.
+  const subAsi =
+    origin?.subchoices?.options.find((o) => o.id === draft.originSubchoiceId)
+      ?.asi ?? {};
 
   function setMethod(m: "standard-array" | "point-buy" | "manual") {
     update((d) => {
@@ -80,7 +86,8 @@ export function AbilitiesStep({ draftHook }: { draftHook: DraftState }) {
         <CardContent>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {ABILITY_ORDER.map((ab) => {
-              const bonus = (fixed[ab] ?? 0) + (floating[ab] ?? 0);
+              const bonus =
+                (fixed[ab] ?? 0) + (floating[ab] ?? 0) + (subAsi[ab] ?? 0);
               const total = draft.abilities[ab] + bonus;
               const mod = abilityMod(total);
               return (

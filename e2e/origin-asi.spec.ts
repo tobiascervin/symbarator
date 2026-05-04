@@ -112,17 +112,7 @@ test.describe("Origin ASI propagation", () => {
     await expect(finalCell(page, "Charisma")).not.toContainText(/base \d+ \+/);
   });
 
-  // The abilities step currently reads `origin.asi.fixed` and
-  // `originAsiAllocation` only — sub-choice ASI is NOT folded into the
-  // displayed bonus today. This test asserts the correct expected behavior
-  // (sub-choice ASI surfacing on the abilities step), so it lands red until
-  // a follow-up change updates `abilities-step.tsx` to mirror
-  // `computeFinalAbilities`. `test.fail()` keeps CI green while the bug
-  // tracks itself: when the fix ships and the assertions pass, Playwright
-  // flags this test as "expected to fail but passed", forcing whoever
-  // landed the fix to flip this back to a regular `test()`.
-  // TODO: open `/opsx:propose abilities-step-subchoice-asi` to fix.
-  test.fail("Human sub-choice ASI updates the abilities-step display when toggled", async ({
+  test("Human sub-choice ASI updates the abilities-step display when toggled", async ({
     page,
   }) => {
     // Human: fixed { str: 2 } + 1×+1 floating + sub-choice (Ambrian +1 INT or Barbarian +1 WIS).
@@ -161,29 +151,26 @@ test.describe("Origin ASI propagation", () => {
     // STR: base 8, fixed=+2 → bonus +2, total 10.
     await expect(finalCell(page, "Strength")).toContainText("base 8 +2");
 
-    // INT: base 13, sub-choice +1 → bonus +1, total 14. (Currently fails:
-    // abilities step does not fold sub-choice ASI; tracked as a follow-up.)
+    // INT: base 13, sub-choice +1 → bonus +1, total 14.
     await expect(finalCell(page, "Intelligence")).toContainText("base 13 +1");
 
     // CHA: base 15, floating +1 → bonus +1, total 16.
     await expect(finalCell(page, "Charisma")).toContainText("base 15 +1");
 
     // ---- Switch sub-choice: navigate back to /builder/origin and pick Barbarian. ----
-    await page.getByRole("button", { name: /^← Back|^Back/ }).first().click();
-    // Back from abilities → approach → class → background → origin.
-    while (!page.url().includes("/builder/origin")) {
-      await page.getByRole("button", { name: /^← Back|^Back/ }).first().click();
-    }
+    // Use a direct goto rather than the wizard's Back button so the test
+    // doesn't race client-side routing through four steps.
+    const id = new URL(page.url()).searchParams.get("id");
+    await page.goto(`/builder/origin?id=${id}`);
     await expect(page).toHaveURL(/\/builder\/origin/);
 
     // Pick Barbarian sub-choice.
     await page.getByRole("button", { name: /^Barbarian/ }).click();
-
-    // Walk forward again to abilities.
+    // Click Continue so the wizard's WizardShell persists the new sub-choice
+    // to localStorage; the in-memory `update` doesn't write through until
+    // Continue lands.
     await page.getByRole("button", { name: /^Continue/ }).click();
-    await page.getByRole("button", { name: /^Continue/ }).click();
-    await page.getByRole("button", { name: /^Continue/ }).click();
-    await page.getByRole("button", { name: /^Continue/ }).click();
+    await page.goto(`/builder/abilities?id=${id}`);
     await expect(page).toHaveURL(/\/builder\/abilities/);
     await applyStandardArray(page);
 
