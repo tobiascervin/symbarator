@@ -12,6 +12,18 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  parseOptionPlaceholders,
+  weaponsForPlaceholder,
+  type Placeholder,
+} from "@/lib/character/equipment-placeholder";
 import { cn } from "@/lib/utils";
 import type { DraftState } from "./use-draft";
 
@@ -47,6 +59,21 @@ export function SkillsEquipmentStep({ draftHook }: { draftHook: DraftState }) {
       const arr = [...d.classEquipmentPicks];
       arr[lineIndex] = optionIndex;
       d.classEquipmentPicks = arr;
+      // Reset placeholder choices when the radio changes — the new option
+      // may have a different placeholder shape (or none at all).
+      const choices = { ...d.classEquipmentChoices };
+      delete choices[lineIndex];
+      d.classEquipmentChoices = choices;
+    });
+  }
+
+  function setPlaceholderChoice(lineIndex: number, slot: number, name: string) {
+    update((d) => {
+      const choices = { ...d.classEquipmentChoices };
+      const slots = [...(choices[lineIndex] ?? [])];
+      slots[slot] = name;
+      choices[lineIndex] = slots;
+      d.classEquipmentChoices = choices;
     });
   }
 
@@ -106,6 +133,13 @@ export function SkillsEquipmentStep({ draftHook }: { draftHook: DraftState }) {
         <CardContent className="space-y-5">
           {cls.startingEquipment.map((line, i) => {
             const options = parseOptions(line);
+            const pickedIdx = draft.classEquipmentPicks[i];
+            const chosenOption =
+              pickedIdx !== undefined ? options[pickedIdx] : undefined;
+            const placeholders = chosenOption
+              ? parseOptionPlaceholders(chosenOption)
+              : [];
+            const choices = draft.classEquipmentChoices[i] ?? [];
             return (
               <div key={i}>
                 <p className="font-display tracking-wide text-base mb-2">
@@ -129,6 +163,20 @@ export function SkillsEquipmentStep({ draftHook }: { draftHook: DraftState }) {
                     </Label>
                   ))}
                 </RadioGroup>
+                {placeholders.length > 0 && (
+                  <div className="mt-2 space-y-2 pl-6">
+                    {placeholders.map((p, slot) => (
+                      <PlaceholderSelect
+                        key={slot}
+                        placeholder={p}
+                        slotIndex={slot}
+                        totalSlots={placeholders.length}
+                        value={choices[slot] ?? ""}
+                        onChange={(name) => setPlaceholderChoice(i, slot, name)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -145,6 +193,50 @@ export function SkillsEquipmentStep({ draftHook }: { draftHook: DraftState }) {
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function PlaceholderSelect({
+  placeholder,
+  slotIndex,
+  totalSlots,
+  value,
+  onChange,
+}: {
+  placeholder: Placeholder;
+  slotIndex: number;
+  totalSlots: number;
+  value: string;
+  onChange(name: string): void;
+}) {
+  const weapons = weaponsForPlaceholder(placeholder);
+  const subcategoryLabel = placeholder.subcategory
+    ? ` ${placeholder.subcategory}`
+    : "";
+  const slotLabel =
+    totalSlots > 1 ? ` ${slotIndex + 1} of ${totalSlots}` : "";
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground min-w-44">
+        Choose your {placeholder.kind}
+        {subcategoryLabel} weapon{slotLabel}:
+      </span>
+      <Select value={value} onValueChange={(v) => onChange(v ?? "")}>
+        <SelectTrigger className="flex-1">
+          <SelectValue placeholder={`Pick a ${placeholder.kind} weapon`} />
+        </SelectTrigger>
+        <SelectContent>
+          {weapons.map((w) => (
+            <SelectItem key={w.id} value={w.name}>
+              {w.name}{" "}
+              <span className="text-[10px] text-muted-foreground">
+                ({w.damage.count}d{w.damage.faces} {w.damageType})
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }

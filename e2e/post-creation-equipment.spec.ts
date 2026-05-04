@@ -72,27 +72,64 @@ test.describe("Post-creation equipment categorization", () => {
   // moment the dropdown ships, which forces the maintainer to flip back
   // to a regular `test()`.
   // TODO: open `/opsx:propose class-equipment-placeholder-dropdown` to fix.
-  // The Warrior / Captain class equipment lines include a placeholder —
-  // "a martial weapon" — which today's resolver doesn't expand to a real
-  // catalog entry. The string falls through to the Equipment Gear list.
-  // The wizard SHOULD surface a follow-up dropdown letting the player
-  // pick the specific martial weapon, and the resolver SHOULD substitute
-  // it at render time. Until that lands, this test acts as a tripwire —
-  // wrapped in `test.fail()` so CI stays green; it'll start passing the
-  // moment the dropdown ships, which forces the maintainer to flip back
-  // to a regular `test()`.
-  // TODO: open `/opsx:propose class-equipment-placeholder-dropdown` to fix.
-  test.fail("Warrior 'a martial weapon' placeholder resolves to a real weapon (not gear)", async ({
+  test("Warrior 'a martial weapon' placeholder resolves to a real weapon (not gear)", async ({
     page,
   }) => {
+    // The wizard's placeholder dropdown persists the player's choice on
+    // `Character.classEquipmentChoices[1]`. The resolver substitutes the
+    // catalog name for the placeholder token before tokenization, so the
+    // literal "a martial weapon" phrase no longer appears on the sheet —
+    // a real catalog weapon does.
+    const draft = {
+      ...freshL1Hero,
+      id: "test-fresh-l1-with-martial-choice",
+      classEquipmentChoices: { 1: ["Longsword"] },
+    };
+    const id = await seedCharacter(page, draft);
+    await gotoSheet(page, id);
+
+    await expect(page.getByText("a martial weapon", { exact: true })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Attack with Longsword/i }),
+    ).toBeVisible();
+  });
+
+  test("'two martial weapons' expands to two real weapons under Combat → Weapons", async ({
+    page,
+  }) => {
+    // Picking option (b) for Warrior line 1 ("two martial weapons") plus
+    // filling both slots produces two distinct weapons.
+    const draft = {
+      ...freshL1Hero,
+      id: "test-fresh-l1-two-martial",
+      classEquipmentPicks: [0, 1, 0, 0],
+      classEquipmentChoices: { 1: ["Longsword", "Axe"] },
+    };
+    const id = await seedCharacter(page, draft);
+    await gotoSheet(page, id);
+
+    await expect(
+      page.getByRole("button", { name: /Attack with Longsword/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Attack with Axe$/i }),
+    ).toBeVisible();
+    await expect(page.getByText("two martial weapons", { exact: true })).toHaveCount(0);
+  });
+
+  test("Unfilled placeholder still falls through to gear (back-compat)", async ({
+    page,
+  }) => {
+    // Pre-1.15 character: classEquipmentChoices is empty, so the resolver
+    // leaves the placeholder unsubstituted — exactly today's behavior.
+    // No phantom weapon under Combat → Weapons; the literal phrase
+    // appears in the gear list as a free-text bullet.
     const id = await seedCharacter(page, freshL1Hero);
     await gotoSheet(page, id);
 
-    // Today the resolver leaves "a martial weapon" as free-text gear, so
-    // the literal phrase appears on the page (in the Equipment Gear list).
-    // Once the wizard's dropdown ships and the resolver substitutes a real
-    // catalog weapon for the placeholder, the literal phrase should no
-    // longer appear anywhere on the sheet.
-    await expect(page.getByText("a martial weapon", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("a martial weapon", { exact: true })).toHaveCount(1);
+    await expect(
+      page.getByRole("button", { name: /Attack with Longsword/i }),
+    ).toHaveCount(0);
   });
 });

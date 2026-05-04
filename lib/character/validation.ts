@@ -6,6 +6,11 @@ import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID } from "@/data/classes";
 import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
+import { WEAPON_BY_NAME } from "@/data/equipment";
+import {
+  categoryMatchesPlaceholder,
+  parseOptionPlaceholders,
+} from "./equipment-placeholder";
 
 export const STEPS = [
   "origin",
@@ -208,6 +213,33 @@ export function validateStep(step: Step, c: Character): string | null {
         return `Pick exactly ${need} class skill${need === 1 ? "" : "s"}.`;
       if (c.classEquipmentPicks.length !== cls.startingEquipment.length)
         return "Choose one option from each equipment line.";
+      // For each line, parse the chosen option's placeholders. If any
+      // remain unfilled (or the chosen catalog name is out of category),
+      // reject the advance with a specific message.
+      for (let i = 0; i < cls.startingEquipment.length; i++) {
+        const line = cls.startingEquipment[i];
+        const pickIdx = c.classEquipmentPicks[i] ?? 0;
+        const opts = line.split(/\bOR\b/i).map((s) =>
+          s.replace(/^\s*\([a-z]\)\s*/i, "").trim(),
+        );
+        const chosen = opts[pickIdx] ?? line;
+        const placeholders = parseOptionPlaceholders(chosen);
+        if (placeholders.length === 0) continue;
+        const choices = c.classEquipmentChoices?.[i] ?? [];
+        if (choices.length !== placeholders.length || choices.some((s) => !s)) {
+          const plural = placeholders.length > 1 ? "s" : "";
+          return `Pick the ${placeholders[0].kind} weapon${plural} for choice ${i + 1}.`;
+        }
+        for (let j = 0; j < placeholders.length; j++) {
+          const w = WEAPON_BY_NAME[choices[j].toLowerCase()];
+          if (!w) {
+            return `Choice ${i + 1}: "${choices[j]}" isn't a recognized weapon.`;
+          }
+          if (!categoryMatchesPlaceholder(w, placeholders[j])) {
+            return `Choice ${i + 1}: "${choices[j]}" isn't a valid ${placeholders[j].kind} weapon.`;
+          }
+        }
+      }
       return null;
     }
     case "identity": {

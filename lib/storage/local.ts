@@ -130,6 +130,16 @@ export function migrateCharacter(raw: unknown): Character {
     if (!Array.isArray(o.added)) o.added = [];
     if (!Array.isArray(o.removed)) o.removed = [];
   }
+  // Backfill `classEquipmentChoices` for pre-1.15 saves. Empty {} means
+  // any placeholder tokens in the chosen class equipment options remain
+  // unsubstituted (today's behavior).
+  if (
+    typeof character.classEquipmentChoices !== "object" ||
+    character.classEquipmentChoices === null ||
+    Array.isArray(character.classEquipmentChoices)
+  ) {
+    character.classEquipmentChoices = {};
+  }
 
   return character;
 }

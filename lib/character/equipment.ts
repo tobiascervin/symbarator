@@ -18,6 +18,7 @@ import type {
 import { computeFinalAbilities, computeProficiencyBonus } from "./compute";
 import { CLASS_BY_ID } from "@/data/classes";
 import { ARMOR_BY_NAME, WEAPON_BY_NAME } from "@/data/equipment";
+import { placeholderSlotsForToken } from "./equipment-placeholder";
 
 export interface ResolvedInventory {
   weapons: ReadonlyArray<WeaponDef>;
@@ -42,7 +43,10 @@ export function resolveCharacterInventory(c: Character): ResolvedInventory {
 
   // Build the raw token list: class-pick derivation, minus removed
   // overrides (one occurrence per entry, case-insensitive), plus added
-  // overrides concatenated at the end.
+  // overrides concatenated at the end. Placeholder tokens (e.g. "a martial
+  // weapon", "two martial weapons") get substituted from
+  // `c.classEquipmentChoices[lineIdx]` in left-to-right order before the
+  // tokenizer runs — see `lib/character/equipment-placeholder.ts`.
   const classTokens: string[] = [];
   if (cls) {
     for (let i = 0; i < cls.startingEquipment.length; i++) {
@@ -52,11 +56,45 @@ export function resolveCharacterInventory(c: Character): ResolvedInventory {
         s.replace(/^\s*\([a-z]\)\s*/i, "").trim(),
       );
       const chosen = opts[pickIdx] ?? line;
-      const tokens = chosen
+      const rawTokens = chosen
         .split(/,| and /i)
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
-      classTokens.push(...tokens);
+
+      // Substitute placeholder tokens with the player's choices for this
+      // line, in left-to-right order. Tokens that aren't placeholders pass
+      // through unchanged. A single token may consume multiple placeholder
+      // slots — `"two martial weapons"` is one token but expands to two
+      // weapons. When a slot has no corresponding choice (mid-wizard /
+      // unmigrated character), the placeholder survives unchanged so it
+      // falls through to `other` downstream.
+      const choices = c.classEquipmentChoices?.[i] ?? [];
+      let placeholderSlot = 0;
+      for (const token of rawTokens) {
+        const slots = placeholderSlotsForToken(token);
+        if (slots === 0) {
+          classTokens.push(token);
+          continue;
+        }
+        let allFilled = true;
+        const expanded: string[] = [];
+        for (let s = 0; s < slots; s++) {
+          const choice = choices[placeholderSlot++];
+          if (choice) {
+            expanded.push(choice);
+          } else {
+            allFilled = false;
+            break;
+          }
+        }
+        if (allFilled) {
+          classTokens.push(...expanded);
+        } else {
+          // Leave the original placeholder token in so it falls through to
+          // `other` — preserves today's behavior for unfilled slots.
+          classTokens.push(token);
+        }
+      }
     }
   }
 

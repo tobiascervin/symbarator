@@ -67,17 +67,17 @@ test.describe("L1 builder happy path", () => {
     for (let i = 0; i < count; i++) {
       await skillBoxes.nth(i).check();
     }
-    // Equipment: pick the first radio option of each equipment line.
-    // We click the first radio of each visually-distinct group; iterating all
-    // visible radios and clicking each is fine — only the last per line wins.
+    // Equipment: Captain has 4 lines × 2 options. Pick option (a) for each
+    // — line 1 (a) is "a martial weapon and a shield", which contains a
+    // placeholder; the wizard requires a follow-up Select pick. Indexing
+    // radios at even positions (0, 2, 4, 6) lands on each (a).
     const radios = page.getByRole("radio");
-    const radioCount = await radios.count();
-    for (let i = 0; i < radioCount; i++) {
-      const r = radios.nth(i);
-      if (await r.isVisible().catch(() => false)) {
-        await r.check().catch(() => undefined);
-      }
+    for (let i = 0; i < 8; i += 2) {
+      await radios.nth(i).check();
     }
+    // Fill the "Choose your martial weapon" Select for line 1's placeholder.
+    await page.getByRole("combobox").first().click();
+    await page.getByRole("option", { name: /Longsword/ }).first().click();
     await page.getByRole("button", { name: /^Continue/ }).click();
 
     // ---- Identity ----

@@ -600,6 +600,15 @@ export interface Character {
   /** Equipment options the player picked from the class table; one index per (a)/(b)/(c) line. */
   classEquipmentPicks: number[];
   /**
+   * Per-line follow-up choices for class equipment options that contain
+   * generic weapon placeholders ("a martial weapon", "two martial weapons",
+   * etc.). Keyed by line index (matching `classEquipmentPicks`). The value
+   * is an ordered array of catalog weapon names (e.g. `["Longsword"]` or
+   * `["Longsword", "Battleaxe"]` for "two martial weapons") — one entry
+   * per placeholder slot in left-to-right order.
+   */
+  classEquipmentChoices: Record<number, string[]>;
+  /**
    * Post-creation inventory deltas. `added` items are appended to the
    * resolved inventory (catalog match → weapons/armor/shield, otherwise
    * free-text gear). `removed` items are filtered out of the class-pick

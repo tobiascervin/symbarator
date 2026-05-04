@@ -29,6 +29,7 @@ export function emptyCharacter(id: string): Character {
     abilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     abilityMethod: "standard-array",
     classEquipmentPicks: [],
+    classEquipmentChoices: {},
     inventoryOverrides: { added: [], removed: [] },
     boons: [],
     burdens: [],
