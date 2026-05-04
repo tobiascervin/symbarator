@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-05-04
+
+The level-up dialog's ASI/Feat picker becomes a sectioned card grid mirroring the L1 boons step's visual, and origin and class feats from PG p. 153–157 are now selectable. Players see every available feat's bonus, prerequisite, and full description without picking it first; class feats with unmet prerequisites surface as disabled cards with a one-line reason. Changeling characters now take Change Self through the same picker — the legacy third radio is gone.
+
+### Added
+
+- **Sectioned feat picker at level-up.** The ASI/Feat step's flat `<Select>` of 36 boons is replaced by a binary ASI/Feat radio plus three labelled card grids — **Boons**, **Origin Feats**, and **Class Feats** — that mirror the L1 boons step's visual one-for-one (same `<FeatPickCard>` component). Empty sections are omitted; cards show name, ability-bonus badge, prerequisite text, and full description without selection.
+- **Disabled-with-reason cards.** Feats with unmet prerequisites (ability score, class level, approach, mutual exclusion, already taken, forbidden by origin) render with the dashed-border + opacity-50 affordance and a one-line reason inline (e.g. *"Requires Strength 13 — you have 12"*, *"Cannot be combined with Confessor"*, *"Already taken"*). The same predicate (`featAvailability(c, feat)`) backs both the UI gating and the persistence-time validator, so the two cannot drift.
+- **8 origin feats per PG p. 153** in the catalog: Shadow-sight (Abducted/Humans), Change Self (Changelings), Retribution (Dwarves), Ancient Magic (Elves), Tough and Stringy (Goblins), Big-boned (Ogres, +1 STR), Robust (Trolls), Ravenous Hunger (Undead). Each declares its `origins` whitelist; Big-boned carries `abilityBonus: { ability: "str", amount: 1 }`.
+- **21 class feats per PG p. 155–157** across all five classes:
+    - **Captain**: Battle Speech (Cha 13+), Command Expert, Parry (Str/Dex 13+).
+    - **Hunter**: Overwatch, Ranged Expert, Trick Shot (Dex 13+).
+    - **Mystic**: Combat Magic Expert; Confessor (Theurg + L11+, mutually exclusive with Inquisitor); Dedicated Focus (spellcasting 13+); Demonologist (Sorcerer + L7+); Extensive Learning (spellcasting 13+); Inquisitor (Theurg + L11+, mutually exclusive with Confessor); Necromancer (Sorcerer + L9+); Pyromancer (Wizard + L9+); Secrets of the Order (Staff Mage + L11+).
+    - **Scoundrel**: Nimble (Dex 13+), Shadow Walker (Dex 13+), Skirmish Expert.
+    - **Warrior**: Bull Rush (Str 13+), Grappler (Str 13+), Melee Expert.
+    - Approach-gated Mystic feats only appear at all for the matching approach (e.g. Pyromancer is invisible to non-Wizards) — section-level filtering, not card-level disabled.
+- **Sheet-side rendering for origin and class feats.** The character sheet's Feats list and the printable sheet now resolve every feat id through a unified `FEAT_BY_ID` lookup. Cards section into "From the Boon list" / "Origin Feats" / "Class Feats" / "Special" and previously-saved `"change-self"` ids automatically render with the PG p. 153 description text — no migration.
+- **`e2e/feat-picker.spec.ts`** with 6 new tests covering the sectioned grid, ability-prerequisite gating, Changeling Change Self path, Confessor↔Inquisitor mutual exclusion, data-integrity (FEAT_BY_ID resolution + classId/approachId correctness against `CLASS_BY_ID`/`ORIGIN_BY_ID`), and a hard-coded **class-feat-isolation guard** that pins every PG class-feat id to its expected `classId`. Suite total: **114/114**.
+
+### Changed
+
+- **Type model.** `lib/character/types.ts` introduces `FeatCategory = "boon" | "origin" | "class"` and a unified `FeatDef` interface that subsumes the old `BoonDef` shape and adds the gating fields above. `BoonDef` becomes a type alias `FeatDef & { category: "boon" }` to preserve all import sites; `BOONS` and `BOON_BY_ID` stay exported as filtered views over the new unified `FEATS` array.
+- **`LevelChoiceAnswer` shape.** The `{ type: "change-self" }` arm is gone; Change Self is now `{ type: "feat", featId: "change-self" }` like every other feat. The `LevelChoiceAnswer` discriminated union loses one in-memory variant — no on-disk save shape changes since the dialog persists nothing mid-session.
+- **`BOON_FORBIDDEN_ORIGINS` retired.** The hand-coded `Record<boonId, originIds[]>` map in `lib/character/validation.ts` is gone; both the L1 boons-step UI and the L1 validator now read `FeatDef.forbiddenOriginIds` directly. Single source of truth.
+
+### Fixed
+
+- **Skirmish Expert filed under the correct class.** The original proposal misfiled Skirmish Expert as a Warrior class feat; per PG p. 156 it's a Scoundrel feat. Catalog entry corrected; the new class-feat-isolation E2E test pins this down so the bug can't recur.
+
+[1.16.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.16.0
+
 ## [1.15.1] - 2026-05-04
 
 Fixes the Templar approach's Corruption Threshold to honor PG p. 143's wis-or-cha rule. Templar characters whose Wisdom modifier exceeds their Charisma modifier had been getting an undercount that made their threshold lower than the PG specifies.
