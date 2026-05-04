@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-05-04
+
+Tap-to-detail popover for feats and class features. Click any boon, burden, level-up feat, or class/approach feature on the sheet and a popover opens with the entry's name, source label, computed badges, structured effect (where encoded), and — for tracked features like Battle Wind, Action Surge, Indomitable, and Berserker Rage — a usage counter and a "Use" button that decrements via the same `live-state` pattern that powers spell slots and Hit Dice.
+
+### Added
+
+- **`<FeatTapPopover>`** in `components/sheet/feat-tap-popover.tsx` — the parallel of `<SpellCastPopover>` for non-spell sheet entries. Built on the same `Dialog` primitive. Header shows the entry's name + source label ("Warrior L1", "Berserker L1", "Boon", "Burden", "Origin: Abducted Human", etc.). Boon/burden bonuses (`+1 INT`, `+2 CON`) carry into the popover as badges. For features with structured `effect` data, the popover shows a resolved formula (e.g. "2d4+3 temp HP" with the character's CON mod folded in). For features with structured `usage`, the popover surfaces "<remaining> of <max> left" + a "Use" button (disabled at 0). Description always renders at the bottom.
+- **New optional fields on `FeatureDef`** (the inline shape used by every class L1, per-level, and approach feature): `id?: string` (stable id for usage tracking — class-prefixed by convention, e.g. `"warrior:battle-wind"`), `usage?: FeatureUsage`, and `effect?: FeatureEffect`. All three are optional; existing entries continue to validate. Adding tracking to a feature is a one-line additive content edit.
+- **`FeatureUsage` and `FeatureEffect` types**: `usage: { count: number | "profBonus" | "level"; per: "short-rest" | "long-rest" }` — string sentinels resolve at display time, so `count: "profBonus"` automatically scales with character level. `effect` is a discriminated union with `{ kind: "tempHp"; dice; addAbilityMod? }` and `{ kind: "passive"; note? }` (extensible).
+- **`Character.featureUses: Record<string, number>`** — remaining uses keyed by feature id. Lazy: absence of an entry is treated as full uses (the popover lazy-initializes to max on first decrement). Migrator backfills `{}` for pre-1.10 saves; idempotent.
+- **`lib/character/features.ts`** — new module exposing `resolveFeatureUsageMax`, `resolveFeatureEffect`, `featureSourceLabel`, `findTrackedFeatures` (walks class L1 + per-level + approach features, last-write-wins for repeated ids so the higher-level entry overrides — e.g. Action Surge L2 has 1 use, L15 has 2; same id, L15 wins at character L15+), and `remainingUses` (lazy-init from max).
+- **`useFeature(c, id)` and `restoreFeature(c, id)`** in `lib/character/live-state.ts`. `useFeature` lazy-inits from the resolved max if the entry is absent, then decrements (floors at 0). Mirrors `spendSlot(c, level)` for spell slots — same primitive shape, same simplicity.
+- **First-pass content fill** for the `usage` schema:
+  - **Warrior** — Battle Wind (L1, profBonus uses per long rest, 2d4 + CON tempHp), Action Surge (L2 = 1 use, L15 = 2 uses; same id `"warrior:action-surge"` so the higher entry overrides), Indomitable (L7, 1 use per long rest).
+  - **Berserker** — Rage (L1, profBonus uses per long rest).
+  - Other classes/approaches stay description-only and degrade gracefully — popover opens with name + description, no usage band. A follow-up content change can extend coverage.
+- **Long rest restores all `per: "long-rest"` AND `per: "short-rest"` tracked features**; short rest restores `per: "short-rest"` only; extended rest inherits via long rest. The Rest panel buttons already in companion mode trigger this — no new control.
+- **`FeatCard.onTap` and `FeatList`/`FeatGroup.onTap`** drilled through the existing card primitives. The local `<Feature>` paragraph component in the sheet's Features section becomes a `<button>` when given an `onTap` handler. Wizard preview surfaces and the printable sheet leave `onTap` undefined and stay inert.
+- **6 new E2E tests** in `e2e/feat-tap.spec.ts`: tap a boon (badge + description in popover), Battle Wind use-counter decrement (2d4+1 effect for CON 13 at L1 → "2 of 2 left" → "1 of 2 left" after Use, persisted to `featureUses["warrior:battle-wind"]`), Use disabled at 0, long rest restores Battle Wind back to max, migration backfill of `featureUses` for pre-1.10 saves, printable sheet has no tappable buttons. Suite total: **73 passing**.
+
+### Changed
+
+- **Schema widens additively**: `Character` gains required `featureUses: Record<string, number>` (default `{}`, migrator-backfilled). `OriginDef.features`, `OriginSubchoice.features?`, `ClassDef.level1Features`, `ApproachDef.level1Features`, `ClassLevelEntry.features`, and `ApproachLevelEntry.features` are widened from `{ name; description }` to the new `FeatureDef` (which adds three optional fields). Every existing entry still validates.
+
+[1.10.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.10.0
+
 ## [1.9.0] - 2026-05-04
 
 Tap-to-share characters via the OS share sheet. Click Share on the character sheet and the OS hands the link to AirDrop, iMessage, Messenger, email, or whatever channel you pick. Recipients tap the link, see a preview of the character, and confirm — no accounts, no backend, no file shuffling.
