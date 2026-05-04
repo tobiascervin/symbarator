@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-05-04
+
+Tap-to-share characters via the OS share sheet. Click Share on the character sheet and the OS hands the link to AirDrop, iMessage, Messenger, email, or whatever channel you pick. Recipients tap the link, see a preview of the character, and confirm — no accounts, no backend, no file shuffling.
+
+### Added
+
+- **Share button** on the character sheet's action bar (left of "Export JSON"). On browsers that support the Web Share API (`navigator.share`), the click opens the OS share sheet with a self-contained import URL. On browsers without it (most desktop Chrome/Firefox), the URL is copied to the clipboard and a "Link copied to clipboard" toast appears. A defensive third tier surfaces a `window.prompt` dialog with the URL pre-filled if both APIs fail. Capability detection happens at click time so SSR / hydration is unaffected.
+- **`/import` route** that reads an encoded share URL (`?c=<base64>` primary, `#c=` fragment fallback for SMS clients that strip queries), runs the payload through the existing `migrateCharacter` pipeline, and renders a preview card with the character's name, origin, level/class/approach, and counts of feats / boons / burdens / known spells. Nothing is written to localStorage until the user clicks Import. Statically prerendered with a Suspense boundary around `useSearchParams`.
+- **Three-option id-collision prompt** on the import preview when the recipient already has a character with the same id: **Replace existing** (overwrites), **Import as a copy** (mints a fresh `nanoid` so both characters coexist), or **Cancel** (no write). Eliminates the silent-overwrite footgun where re-importing a stale share could clobber a session of edits.
+- **`lib/character/share.ts`** — new pure-function module exposing `encodeCharacterToShareUrl(c, origin)`, `decodeCharacterFromUrl(url)` (returns `{ character }` or `{ error: string }` — never throws), `extractSharePayload(input)` (used by the home paste affordance), and a `SHARE_URL_SOFT_LIMIT = 8000` constant. Encoding uses the UTF-8-safe base64 idiom so non-ASCII identity names round-trip correctly.
+- **"Paste shared link" affordance on the home page** — fallback for users on a different device than the one the link arrived on, or when the channel didn't autolink. Accepts a full URL or just the `c=...` payload portion, validates inline, and routes to `/import` on submit.
+- **URL-length warning** at encode time. If the encoded share URL exceeds 8000 characters (a conservative SMS-truncation floor), the Share button surfaces a non-blocking toast: "may not work in SMS — AirDrop / email / Messenger should be fine." Doesn't block the share.
+- **11 new E2E tests** covering: encoder/decoder round-trip, fragment fallback, malformed payload, end-to-end preview-and-import, error card on garbage input, id-collision "Import as a copy" mints a new id and keeps both characters, home paste accept + reject, `navigator.share` stub captures the right URL, clipboard fallback captures + toasts, printable sheet has no Share button. Suite total: **67 passing**.
+- **New `character-sharing` capability spec** in `openspec/specs/character-sharing/`.
+
+### Notes
+
+- **No `Character` schema changes.** No migration. The shared payload is the existing JSON-export shape encoded in the URL.
+- **No backend, no link shortening, no expiration.** The character data rides in the URL; recipients reconstruct it locally. This matches the existing JSON-export semantic — anyone you give the link to can import a copy.
+- **Printable sheet stays Share-button-free** — it's a paper-transfer artifact, not the live source of truth. The "Back to sheet" link returns to where Share lives.
+- **Web Share API isn't available on desktop Firefox** and is inconsistent on desktop Chrome; the clipboard fallback is the path you'll usually hit there. Mobile Safari, mobile Chrome, mobile Edge, and macOS Safari all hit the share-sheet path.
+
+[1.9.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.9.0
+
 ## [1.8.0] - 2026-05-03
 
 Tap-to-cast spells in companion mode. Click any spell on the sheet and a Cast popover opens showing the live computed numbers (Spell Mod, Attack, Save DC), the dice you'll actually roll for that spell at the character's current level, and per-tier "Cast at L<n>" buttons that spend a slot via the existing pip primitive. Cantrips auto-scale by character level (1d10 → 2d10 → 3d10 → 4d10 at L5/11/17); leveled spells expand their dice when cast at a higher slot.
