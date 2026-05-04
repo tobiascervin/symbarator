@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.2] - 2026-05-04
+
+Fixes the Human origin's floating ASI rule (which was too permissive vs PG p. 71) and tightens the origin-step allocator UI to show the origin's fixed bonus inline.
+
+### Fixed
+
+- **Human floating +1 is now restricted to DEX, CON, or CHA** per PG p. 71 ("Increase Dexterity, Constitution or Charisma by 1"). Previously the rule was encoded as `any-other`, which let a player allocate the floating to INT or WIS — outside RAW. The picker disables the `+` buttons for STR (fixed), INT, and WIS; the validator rejects out-of-list allocations on advance as defense in depth for hand-edited saves. Audited the other eight origins against the PG: Human is the only one with a restricted RAW list, so all others stay `any-other`.
+- **Origin-step allocator now folds the origin's fixed ASI into each cell's main `+{value}`.** Previously the cells showed only the player's floating allocation, hiding the origin's fixed bump entirely (a Human's STR cell read `+0` even though the origin grants `+2`). The cell value is now `fixed + floating`, and the `+`/`−` buttons modify only the floating portion — Human's STR cell now reads `+2` directly with the buttons disabled, while DEX/CON/CHA show `+0` then `+1` after the player allocates.
+
+### Notes
+
+- **Existing Human characters with an out-of-list allocation** (e.g. `originAsiAllocation: { int: 1 }`) keep their saved value on load — there's no migration. The next time they visit `/builder/origin`, the `−` button still works to bring the allocation back to 0; the `+` button on INT/WIS is disabled, so they re-allocate to a legal ability. Continue is gated by the new validator check, so they can't advance with the illegal allocation. No silent stat changes.
+- **Schema change is additive** — `AbilityScoreBoost.floating` gains an optional `from?: ReadonlyArray<Ability>`. Origins without the field continue to validate. No `Character` shape change; saved characters still load.
+
+[1.14.2]: https://github.com/tobiascervin/symbarator/releases/tag/v1.14.2
+
 ## [1.14.1] - 2026-05-04
 
 Fixes a wizard preview discrepancy where origin sub-choice ASI was silently dropped from the abilities-step display, even though the downstream sheet handled it correctly.
