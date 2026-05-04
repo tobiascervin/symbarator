@@ -104,7 +104,15 @@ export interface AbilityScoreBoost {
   // Free-floating points the player must allocate (e.g. "+1 to any one").
   // The `pick` rule is one of: "any-one", "any-two", "any-other".
   // "any-other" means a different ability than the fixed ones above.
-  floating?: { count: number; size: 1 | 2; rule: "any-one" | "any-other" };
+  // `from`, when present, restricts the allocation to the listed abilities,
+  // intersected with whatever `rule` already excludes (e.g. Human's
+  // floating +1 must go to DEX, CON, or CHA per PG p. 71).
+  floating?: {
+    count: number;
+    size: 1 | 2;
+    rule: "any-one" | "any-other";
+    from?: ReadonlyArray<Ability>;
+  };
 }
 
 export interface OriginSubchoice {

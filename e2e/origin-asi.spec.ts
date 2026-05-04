@@ -181,6 +181,40 @@ test.describe("Origin ASI propagation", () => {
     await expect(finalCell(page, "Wisdom")).toContainText("base 14 +1");
   });
 
+  test("Human floating allocator restricts to DEX/CON/CHA and folds the +2 STR fixed bonus into the cell value", async ({
+    page,
+  }) => {
+    // PG p. 71: "Your Strength score increases by 2. Increase Dexterity,
+    // Constitution or Charisma by 1." — INT and WIS are NOT eligible for
+    // the floating allocation. The allocator's STR cell value reflects the
+    // origin's fixed +2 directly (no separate badge — the +2 IS the value).
+    await page.goto("/");
+    await page.getByRole("button", { name: /Forge a New Hero/i }).click();
+
+    await expect(page).toHaveURL(/\/builder\/origin/);
+    await originCard(page, "Human").click();
+    await page.getByText(/Allocate floating ability bonuses/i).waitFor();
+
+    // The allocator's "+" buttons (six total, ABILITY_ORDER) are
+    // enabled only on DEX, CON, and CHA. STR is fixed; INT and WIS are
+    // outside Human's `from` list.
+    const plus = page.getByRole("button", { name: "+", exact: true });
+    await expect(plus.nth(ABILITY_INDEX.str)).toBeDisabled();
+    await expect(plus.nth(ABILITY_INDEX.dex)).toBeEnabled();
+    await expect(plus.nth(ABILITY_INDEX.con)).toBeEnabled();
+    await expect(plus.nth(ABILITY_INDEX.int)).toBeDisabled();
+    await expect(plus.nth(ABILITY_INDEX.wis)).toBeDisabled();
+    await expect(plus.nth(ABILITY_INDEX.cha)).toBeEnabled();
+
+    // The STR allocator cell shows `+2` directly (origin's fixed bonus,
+    // folded into the cell value).
+    const strCell = page
+      .locator("div.rounded-md.border")
+      .filter({ has: page.locator("div", { hasText: /^Strength$/ }) })
+      .first();
+    await expect(strCell).toContainText("+2");
+  });
+
   test("Floating-allocation gate blocks advance until fully allocated", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: /Forge a New Hero/i }).click();

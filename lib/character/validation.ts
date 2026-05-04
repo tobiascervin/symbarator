@@ -87,6 +87,18 @@ export function validateStep(step: Step, c: Character): string | null {
       if (allocated !== target) {
         return `Allocate exactly ${target} bonus point${target === 1 ? "" : "s"} from your origin.`;
       }
+      // When the origin restricts the floating to a `from` list, reject any
+      // allocation against an ability outside that list (defense in depth —
+      // the picker disables the `+` button, but a hand-edited save shouldn't
+      // slip through).
+      const from = origin.asi.floating?.from;
+      if (from) {
+        for (const [ab, n] of Object.entries(c.originAsiAllocation)) {
+          if ((n ?? 0) > 0 && !from.includes(ab as never)) {
+            return `Cannot allocate to ${ab.toUpperCase()} — ${origin.name}'s floating bonus only goes to ${from.map((a) => a.toUpperCase()).join(", ")}.`;
+          }
+        }
+      }
       return null;
     }
     case "background": {

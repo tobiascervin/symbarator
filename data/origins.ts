@@ -257,7 +257,9 @@ export const ORIGINS: ReadonlyArray<OriginDef> = [
       "The folk of Ambria and the barbarian clans of Davokar — same stem, two cultures sundered by centuries.",
     asi: {
       fixed: { str: 2 },
-      floating: { count: 1, size: 1, rule: "any-other" },
+      // PG p. 71: "Increase Dexterity, Constitution or Charisma by 1." —
+      // restricted floating list, NOT plain "any other".
+      floating: { count: 1, size: 1, rule: "any-other", from: ["dex", "con", "cha"] },
     },
     hitDie: 8,
     size: "medium",

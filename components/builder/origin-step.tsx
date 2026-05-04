@@ -60,8 +60,10 @@ export function OriginStep({ draftHook }: { draftHook: DraftState }) {
   const fixed = selectedOrigin?.asi.fixed ?? {};
   const eligibleForFloating = (ab: Ability): boolean => {
     if (!selectedOrigin) return false;
-    const rule = selectedOrigin.asi.floating?.rule;
-    if (rule === "any-other") return !(ab in fixed);
+    const f = selectedOrigin.asi.floating;
+    if (!f) return false;
+    if (f.rule === "any-other" && ab in fixed) return false;
+    if (f.from && !f.from.includes(ab)) return false;
     return true;
   };
 
@@ -230,18 +232,26 @@ export function OriginStep({ draftHook }: { draftHook: DraftState }) {
                   {ABILITY_ORDER.map((ab) => {
                     const eligible = eligibleForFloating(ab);
                     const value = draft.originAsiAllocation[ab] ?? 0;
+                    const fixedAt = fixed[ab] ?? 0;
+                    // Cell value = origin's fixed contribution + player's
+                    // floating allocation. Buttons control only the
+                    // floating portion. For non-eligible cells with no
+                    // fixed bonus (e.g. Human INT/WIS), the cell stays at
+                    // +0 and is dimmed.
+                    const total = fixedAt + value;
+                    const dim = !eligible && fixedAt === 0;
                     return (
                       <div
                         key={ab}
                         className={cn(
                           "rounded-md border p-2 text-center",
-                          !eligible && "opacity-40",
+                          dim && "opacity-40",
                         )}
                       >
                         <div className="font-display text-xs uppercase tracking-widest text-muted-foreground">
                           {ABILITY_LABELS[ab]}
                         </div>
-                        <div className="text-2xl font-display py-1">+{value}</div>
+                        <div className="text-2xl font-display py-1">+{total}</div>
                         <div className="flex justify-center gap-1">
                           <Button
                             variant="outline"
