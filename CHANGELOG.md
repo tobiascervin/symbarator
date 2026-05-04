@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-05-04
+
+Fixes a wizard preview discrepancy where origin sub-choice ASI was silently dropped from the abilities-step display, even though the downstream sheet handled it correctly.
+
+### Fixed
+
+- **Wizard's "Final Ability Scores" now folds origin sub-choice ASI into the displayed bonus.** The abilities step previously read `origin.asi.fixed + originAsiAllocation` only — Human → Ambrian's `+1 INT` and Barbarian's `+1 WIS` (and Goblin clan ASIs) silently dropped from the wizard preview, so a Human/Ambrian character looked like INT 13 in the wizard but landed on the sheet at INT 14. The displayed bonus now sums fixed + floating + sub-choice, matching the origin portion of `computeFinalAbilities`. Switching the sub-choice on `/builder/origin` (Ambrian ↔ Barbarian) updates the abilities step on next visit.
+- **Re-enabled the regression test that surfaced this bug.** `e2e/origin-asi.spec.ts:Human sub-choice ASI updates the abilities-step display when toggled` was wrapped in `test.fail()` in v1.14.0 as a tripwire for this fix; with the fix landed it's now a regular `test()` and a forward-going regression guard. Suite total: **86 passing**.
+
+[1.14.1]: https://github.com/tobiascervin/symbarator/releases/tag/v1.14.1
+
 ## [1.14.0] - 2026-05-04
 
 E2E coverage for origin ASI propagation through the wizard. The single most rules-load-bearing piece of math in the L1 builder — origin fixed bonuses, floating allocations, and sub-choice ASI flowing into the abilities step's "Final Ability Scores" display — is now exercised end-to-end against the live wizard (no LocalStorage seed). One of the three new tests deliberately lands red as `test.fail()`, surfacing a real bug in `abilities-step.tsx` that the design doc anticipated and the next release will fix.
