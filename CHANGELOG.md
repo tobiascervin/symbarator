@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-05-04
+
+Equipment becomes first-class on the character sheet. Weapons and armor now live as structured catalog entries (PG p. 162–171) under a dedicated Combat section with tap-to-attack popovers and a real AC readout, players can manage their inventory mid-game via a rucksack modal that adds/removes items and persists, and the wizard finally asks which weapon to take when the class equipment line says "a martial weapon" instead of letting the placeholder fall through to gear.
+
+### Added
+
+- **Weapon and armor catalogs** in `data/equipment.ts` covering PG p. 162–171: 60+ `WeaponDef` entries across simple/martial × melee/ranged plus alchemical and siege, and `ArmorDef` entries across light/medium/heavy/shields. Each carries damage dice or AC formula plus Symbaroum properties (finesse, versatile, deep-impact, ensnaring, massive, restraining, returning, balanced, concealed, …) and 5e SRD aliases ("Chain mail", "Leather armor", "light crossbow"→"Crossbow, light").
+- **Combat section restructure on the character sheet.** Initiative / AC / Speed / Proficiency now sit alongside two new subsections — Weapons and Armor — inside the Combat parchment. The standalone Equipment parchment narrows to non-weapon, non-armor items (adventuring packs, ammo qualifiers, free-text gear, background equipment prose).
+- **`computeAC`** following PG p. 168–171 (unarmored 10+Dex; light base+Dex; medium base+min(Dex, 2); heavy base; +2 shield).
+- **Tap-to-attack weapon popover** modeled on the spell-cast popover. Reads attack bonus and damage off the character: STR for melee, DEX for ranged, max(STR, DEX) for finesse, with versatile weapons rendering both 1H and 2H damage rows and a Symbaroum property badge row underneath.
+- **Inventory modal** (rucksack-icon-with-text "Inventory" button beside the Combat and Equipment headings). Three tabs (Weapons / Armor / Gear) with search, category-grouped catalog lists in collapsible groups (search auto-expands matching groups), free-text Gear input, and a Current Inventory list with per-item remove buttons. Mutations persist through localStorage and JSON export/import.
+- **Wizard dropdown for class-equipment placeholders.** Captain and Warrior starting-equipment lines like "a martial weapon" / "two martial weapons" / "a simple ranged weapon" now render an inline `<Select>` directly under the chosen radio option. The wizard validator blocks Continue when any placeholder slot is unfilled or out-of-category, and the resolver substitutes the catalog name into the inventory before tokenization — so the chosen item surfaces as a real tap-to-attack weapon card under Combat → Weapons rather than as free-text gear. Existing pre-1.15 saves with unfilled placeholders fall through to gear unchanged (back-compat).
+- **E2E coverage**: `e2e/weapon-attack.spec.ts` (4 tests — armored Warrior AC, unarmored Mystic AC, Mystic quarterstaff popover, finesse dagger picks DEX), `e2e/inventory-modal.spec.ts` (7 tests — open, add weapon, add catalog armor including the "Concealed Armor" suffix regression, add free-text gear, remove chain shirt drops AC, migrator backfill), `e2e/post-creation-equipment.spec.ts` (Warrior/Mystic catalog items surface under Combat → Weapons / Armor and never duplicate as gear; Warrior with "two martial weapons" produces both picks). Builder happy-path updated to fill the martial-weapon Select with "Longsword". Suite total: 103/103.
+
+### Changed
+
+- **Schema (additive).** `Character` gains two required fields, both backfilled by the migrator for pre-1.15 saves and idempotent on already-migrated saves: `inventoryOverrides: { added: string[]; removed: string[] }` (delta on top of `classEquipmentPicks`) and `classEquipmentChoices: Record<number, string[]>` (catalog names keyed by equipment line index, ordered list per placeholder slot). New characters initialize both empty.
+
+### Fixed
+
+- **Catalog armor names ending in " Armor" routed to gear.** The resolver in `lib/character/equipment.ts` previously stripped the trailing " armor" suffix unconditionally before looking up the catalog, which broke Concealed Armor, Crow Armor, Laminated Armor, Field Armor, Field Armor of the Pansars, and Leather armor. Now tries candidate keys in order — alias → as-is → stripped — so suffix-bearing catalog names match before the fallback fires.
+
+[1.15.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.15.0
+
 ## [1.14.2] - 2026-05-04
 
 Fixes the Human origin's floating ASI rule (which was too permissive vs PG p. 71) and tightens the origin-step allocator UI to show the origin's fixed bonus inline.
