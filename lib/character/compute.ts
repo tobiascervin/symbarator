@@ -265,6 +265,8 @@ export function computeSpellcasting(c: Character) {
     spellSlots: row?.spellSlots ?? [sc.spellSlotsAt1, 0, 0, 0, 0, 0, 0, 0, 0],
     tradition: approach?.tradition ?? null,
     abilityHint: sc.abilityHint,
+    /** Spells the approach grants automatically, on top of player picks. */
+    grantedSpells: sc.alwaysKnownSpells ?? [],
   };
 }
 

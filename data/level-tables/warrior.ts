@@ -450,6 +450,9 @@ export const WARRIOR_APPROACH_LEVEL_TABLES: Record<string, ReadonlyArray<Approac
 // Templar spellcasting (PG p. 143)
 // Cantrips known and per-level spells-known come from the PG chart.
 // Spell slot table follows the standard 5E half-caster (Paladin) progression.
+// PG p. 143: "you learn 2 cantrips and 1 first-level spell from the Theurg
+// tradition list, plus the bless spell" — bless is granted automatically on
+// top of the player's picks via `alwaysKnownSpells`.
 // ---------------------------------------------------------------------------
 
 export const TEMPLAR_SPELLCASTING: ApproachSpellcasting = {
@@ -464,4 +467,5 @@ export const TEMPLAR_SPELLCASTING: ApproachSpellcasting = {
     // breakpoints L1/3/6/9/13/17. Carry forward at unchanged levels.
     spellsKnown: [1, 1, 3, 3, 3, 6, 6, 6, 10, 10, 10, 10, 13, 13, 13, 13, 15, 15, 15, 15],
   }),
+  alwaysKnownSpells: ["bless"],
 };

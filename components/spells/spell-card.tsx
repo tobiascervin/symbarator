@@ -16,6 +16,12 @@ export interface SpellCardDisplayProps {
    * sheet, level-up review).
    */
   onCast?(): void;
+  /**
+   * When true, render a "Granted" badge alongside the school/ritual badges
+   * to mark the spell as approach-granted (e.g. Templar's bless) rather
+   * than player-chosen. Sheet-only signal.
+   */
+  granted?: boolean;
 }
 
 export interface SpellCardPickerProps {
@@ -34,6 +40,7 @@ export type SpellCardProps = SpellCardDisplayProps | SpellCardPickerProps;
  */
 export function SpellCard(props: SpellCardProps) {
   const { spell } = props;
+  const granted = props.mode === "display" && props.granted === true;
   const inner = (
     <span className="flex-1 min-w-0">
       <span className="font-display text-base text-foreground block">{spell.name}</span>
@@ -44,6 +51,11 @@ export function SpellCard(props: SpellCardProps) {
         {spell.ritual && (
           <Badge variant="secondary" className="text-[10px] tracking-wider uppercase">
             Ritual
+          </Badge>
+        )}
+        {granted && (
+          <Badge variant="default" className="text-[10px] tracking-wider uppercase">
+            Granted
           </Badge>
         )}
       </span>

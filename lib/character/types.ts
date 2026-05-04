@@ -242,6 +242,13 @@ export interface ApproachSpellcasting {
   spellSlotsAt1: number;
   /** Length 20; row 0 corresponds to character level 1. */
   progression: ReadonlyArray<SpellSlotRow>;
+  /**
+   * Spells the approach grants automatically, in addition to the player's
+   * `cantripsKnownAt1` / `spellsKnownAt1` picks. They MUST exist in
+   * `SPELL_BY_ID` and are not persisted on the character — the sheet derives
+   * them from the approach. Templar gets `["bless"]` per PG p. 143.
+   */
+  alwaysKnownSpells?: ReadonlyArray<string>;
 }
 
 export interface ClassDef {

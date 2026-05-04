@@ -299,15 +299,20 @@ export function PrintableSheet({ character: c }: { character: Character }) {
       )}
 
       {/* Spells */}
-      {spell && c.spellPicks &&
-        (c.spellPicks.cantrips.length + c.spellPicks.spellsKnown.length) > 0 && (
+      {spell &&
+        (
+          (c.spellPicks &&
+            (c.spellPicks.cantrips.length + c.spellPicks.spellsKnown.length) > 0) ||
+          spell.grantedSpells.length > 0
+        ) && (
           <Section heading="Spells" avoidBreak>
             <p className="text-xs text-[#5a4d2f] mb-2">
               Tradition: <span className="font-display">{spell.tradition ?? "—"}</span>
             </p>
             <SpellList
-              cantrips={c.spellPicks.cantrips}
-              spellsKnown={c.spellPicks.spellsKnown}
+              cantrips={c.spellPicks?.cantrips ?? []}
+              spellsKnown={c.spellPicks?.spellsKnown ?? []}
+              grantedSpells={spell.grantedSpells}
             />
           </Section>
         )}
@@ -481,11 +486,14 @@ function Row({
 function SpellList({
   cantrips,
   spellsKnown,
+  grantedSpells,
 }: {
   cantrips: ReadonlyArray<string>;
   spellsKnown: ReadonlyArray<string>;
+  grantedSpells: ReadonlyArray<string>;
 }) {
-  const known = [...cantrips, ...spellsKnown]
+  const knownIds = Array.from(new Set([...cantrips, ...spellsKnown, ...grantedSpells]));
+  const known = knownIds
     .map((id) => SPELL_BY_ID[id])
     .filter((s): s is NonNullable<typeof s> => s !== undefined);
 

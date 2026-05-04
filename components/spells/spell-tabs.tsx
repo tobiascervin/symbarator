@@ -33,6 +33,12 @@ export type SpellTabsMode =
        * mode; printable mode and the level-up review leave it undefined.
        */
       onCast?(spell: SpellDef): void;
+      /**
+       * Spell ids that are granted by the approach (e.g. Templar's bless)
+       * rather than chosen by the player. Cards for these ids render a
+       * "Granted" badge.
+       */
+      grantedSpellIds?: ReadonlySet<string>;
     }
   | {
       kind: "picker";
@@ -134,6 +140,7 @@ export function SpellTabs({ spells, levels, mode }: SpellTabsProps) {
                         mode="display"
                         spell={spell}
                         onCast={mode.onCast ? () => mode.onCast!(spell) : undefined}
+                        granted={mode.grantedSpellIds?.has(spell.id) ?? false}
                       />
                     );
                   }

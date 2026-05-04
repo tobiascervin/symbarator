@@ -349,7 +349,11 @@ export function CharacterSheet({
           )}
 
           {/* Spells (any spellcasting approach) */}
-          {spell && c.spellPicks && (c.spellPicks.cantrips.length + c.spellPicks.spellsKnown.length) > 0 && (
+          {spell && (
+            (c.spellPicks &&
+              (c.spellPicks.cantrips.length + c.spellPicks.spellsKnown.length) > 0) ||
+            spell.grantedSpells.length > 0
+          ) && (
             <Parchment>
               <SectionHeader>Spellcraft</SectionHeader>
               <p className="text-sm text-[#3a322a] mb-3">
@@ -362,8 +366,9 @@ export function CharacterSheet({
                 <SheetSpellbook
                   character={c}
                   onChange={handleChange}
-                  cantrips={c.spellPicks.cantrips}
-                  spellsKnown={c.spellPicks.spellsKnown}
+                  cantrips={c.spellPicks?.cantrips ?? []}
+                  spellsKnown={c.spellPicks?.spellsKnown ?? []}
+                  grantedSpells={spell.grantedSpells}
                 />
               </div>
             </Parchment>
@@ -546,11 +551,13 @@ function SheetSpellbook({
   onChange,
   cantrips,
   spellsKnown,
+  grantedSpells,
 }: {
   character: Character;
   onChange(updated: Character): void;
   cantrips: ReadonlyArray<string>;
   spellsKnown: ReadonlyArray<string>;
+  grantedSpells: ReadonlyArray<string>;
 }) {
   // Local state: which spell, if any, has the cast popover open. The popover
   // owns its preview cast level internally — it just resets when `castSpell`
@@ -558,12 +565,19 @@ function SheetSpellbook({
   const [castSpell, setCastSpell] = useState<SpellDef | null>(null);
 
   // Resolve every known id to its catalog entry (skip unknown ids silently;
-  // they may be from a future schema or a typo in seeded data).
-  const known = [...cantrips, ...spellsKnown]
+  // they may be from a future schema or a typo in seeded data). Granted
+  // spells (e.g. Templar's bless) are merged on top of the player's picks
+  // — they are derived from the approach, never persisted. De-duplicate so
+  // a save that happens to also list a granted id in `spellsKnown` doesn't
+  // render the same card twice.
+  const knownIds = Array.from(new Set([...cantrips, ...spellsKnown, ...grantedSpells]));
+  const known = knownIds
     .map((id) => SPELL_BY_ID[id])
     .filter((s): s is NonNullable<typeof s> => s !== undefined);
 
   if (known.length === 0) return null;
+
+  const grantedSpellIds = new Set(grantedSpells);
 
   // Levels present in the character's known spells, ascending.
   const levels = Array.from(new Set(known.map((s) => s.level))).sort(
@@ -575,7 +589,7 @@ function SheetSpellbook({
       <SpellTabs
         spells={known}
         levels={levels}
-        mode={{ kind: "display", onCast: setCastSpell }}
+        mode={{ kind: "display", onCast: setCastSpell, grantedSpellIds }}
       />
       <SpellCastPopover
         open={castSpell !== null}

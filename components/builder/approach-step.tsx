@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { CLASS_BY_ID } from "@/data/classes";
-import { spellsForTradition } from "@/data/spells";
+import { spellsForTradition, SPELL_BY_ID } from "@/data/spells";
 import {
   Card,
   CardContent,
@@ -10,8 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { SpellTabs } from "@/components/spells/spell-tabs";
 import { cn } from "@/lib/utils";
 import type { DraftState } from "./use-draft";
@@ -27,10 +25,16 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
   if (!cls) return null;
 
   const selected = cls.approaches.find((a) => a.id === draft.approachId);
+  const cantripsSelected = useMemo(
+    () => new Set(draft.spellPicks?.cantrips ?? []),
+    [draft.spellPicks?.cantrips],
+  );
   const spellsSelected = useMemo(
     () => new Set(draft.spellPicks?.spellsKnown ?? []),
     [draft.spellPicks?.spellsKnown],
   );
+  const grantedSpells = selected?.spellcasting?.alwaysKnownSpells ?? [];
+  const grantedSet = useMemo(() => new Set(grantedSpells), [grantedSpells]);
 
   function selectApproach(id: string) {
     update((d) => {
@@ -66,8 +70,14 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
   }
 
   const tradition = selected?.tradition;
-  const cantripOptions = tradition ? spellsForTradition(tradition, 0) : [];
-  const spellOptions = tradition ? spellsForTradition(tradition, 1) : [];
+  // Filter granted spells out of the picker pools — players can't pick what's
+  // already known via the approach grant (e.g. Templar's bless).
+  const cantripOptions = tradition
+    ? spellsForTradition(tradition, 0).filter((s) => !grantedSet.has(s.id))
+    : [];
+  const spellOptions = tradition
+    ? spellsForTradition(tradition, 1).filter((s) => !grantedSet.has(s.id))
+    : [];
 
   return (
     <div className="space-y-8">
@@ -125,30 +135,49 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
 
             {selected.spellcasting && tradition && (
               <>
+                {selected.spellcasting.alwaysKnownSpells &&
+                  selected.spellcasting.alwaysKnownSpells.length > 0 && (
+                    <div>
+                      <p className="font-display tracking-wide text-base mb-2">
+                        Always known{" "}
+                        <span className="text-xs text-muted-foreground italic font-sans">
+                          (granted by your approach)
+                        </span>
+                      </p>
+                      <ul className="space-y-1 text-sm">
+                        {selected.spellcasting.alwaysKnownSpells.map((id) => {
+                          const spell = SPELL_BY_ID[id];
+                          if (!spell) return null;
+                          return (
+                            <li key={id} className="rounded-md border border-dashed p-2">
+                              <span className="font-display">{spell.name}</span>
+                              <span className="block text-xs text-muted-foreground">
+                                {spell.school} · {spell.description}
+                              </span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
                 <div>
                   <p className="font-display tracking-wide text-base mb-2">
                     Cantrips — pick {selected.spellcasting.cantripsKnownAt1} (
                     {(draft.spellPicks?.cantrips.length ?? 0)} chosen)
                   </p>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {cantripOptions.map((s) => {
-                      const checked = draft.spellPicks?.cantrips.includes(s.id) ?? false;
-                      return (
-                        <Label
-                          key={s.id}
-                          className="flex items-start gap-3 rounded-md border p-2 cursor-pointer hover:border-ring/60"
-                        >
-                          <Checkbox checked={checked} onCheckedChange={() => toggleCantrip(s.id)} />
-                          <span>
-                            <span className="font-display">{s.name}</span>
-                            <span className="block text-xs text-muted-foreground">
-                              {s.school} · {s.description}
-                            </span>
-                          </span>
-                        </Label>
-                      );
-                    })}
-                  </div>
+                  <SpellTabs
+                    spells={cantripOptions}
+                    levels={[0]}
+                    mode={{
+                      kind: "picker",
+                      selected: cantripsSelected,
+                      onToggle: (id) => toggleCantrip(id),
+                      remaining:
+                        (selected.spellcasting?.cantripsKnownAt1 ?? 0) -
+                        (draft.spellPicks?.cantrips.length ?? 0),
+                    }}
+                  />
                 </div>
 
                 <div>

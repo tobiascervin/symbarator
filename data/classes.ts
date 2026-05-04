@@ -905,6 +905,7 @@ export const CLASS_BY_ID: Record<string, ClassDef> = Object.fromEntries(
 // ---------------------------------------------------------------------------
 
 import { ASI_FEAT_LEVELS } from "@/lib/character/types";
+import { SPELL_BY_ID } from "./spells";
 
 (function assertLevelTables() {
   const ASI_LEVELS = new Set<number>(ASI_FEAT_LEVELS as readonly number[]);
@@ -945,6 +946,10 @@ import { ASI_FEAT_LEVELS } from "@/lib/character/types";
         if (sc.progression.length !== 20) {
           fail(`${cls.id}/${approach.id}: progression.length ${sc.progression.length}, expected 20`);
           continue;
+        }
+        for (const spellId of sc.alwaysKnownSpells ?? []) {
+          if (!SPELL_BY_ID[spellId])
+            fail(`${cls.id}/${approach.id}: alwaysKnownSpells contains unknown spell id "${spellId}"`);
         }
         for (let i = 1; i < 20; i++) {
           const prev = sc.progression[i - 1];
