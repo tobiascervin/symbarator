@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-05-04
+
+Fixes the Templar approach's Corruption Threshold to honor PG p. 143's wis-or-cha rule. Templar characters whose Wisdom modifier exceeds their Charisma modifier had been getting an undercount that made their threshold lower than the PG specifies.
+
+### Fixed
+
+- **Templar Corruption Threshold now uses `max(chaMod, wisMod)`** per PG p. 143: *"If your Wisdom modifier is higher than your Charisma modifier, you can use it instead of Charisma to calculate your Corruption Threshold."* Previously the formula always used Charisma for any Warrior approach (because the formula selection happens at the class layer and the approach had no way to influence it), undercounting the threshold for Templars whose Wis exceeds their Cha. The fix is approach-level data: a new optional `corruptionAbilityOverride: Ability` on `ApproachDef`, declared as `"wis"` only on Templar. When set on an approach whose parent class has `shadowFormula: "standard"`, the formula becomes `max(2, 2 × profBonus + max(chaMod, overrideMod))`. Non-Templar Warrior approaches (Berserker, Wrathguard, Rune Smith, Weapon Master) keep the unmodified standard formula. Mystic-formula classes ignore the field — their ability still comes from `spellcasting.abilityHint` exclusively. Existing Templar saves see a corrected (and usually higher) threshold the next time their sheet renders; no migration required because Corruption Threshold is computed at render time.
+
+### Notes
+
+- **Schema is unchanged** — `Character` JSON shape is identical, no migrator change. The new field lives on the static `ApproachDef` data type, not on the persisted character.
+
+[1.15.1]: https://github.com/tobiascervin/symbarator/releases/tag/v1.15.1
+
 ## [1.15.0] - 2026-05-04
 
 Equipment becomes first-class on the character sheet. Weapons and armor now live as structured catalog entries (PG p. 162–171) under a dedicated Combat section with tap-to-attack popovers and a real AC readout, players can manage their inventory mid-game via a rucksack modal that adds/removes items and persists, and the wizard finally asks which weapon to take when the class equipment line says "a martial weapon" instead of letting the placeholder fall through to gear.
