@@ -86,8 +86,8 @@ test.describe("Spell cast popover (companion mode)", () => {
     const id = await seedCharacter(page, mysticWithSlots);
     await gotoSheet(page, id);
 
-    // Switch to the 1st-level tab and tap Magic Missile.
-    await page.getByRole("tab", { name: /1st/i }).click();
+    // The 1st-level section is expanded by default in the new collapsible
+    // layout, so Magic Missile is visible without a header click.
     await page.getByRole("button", { name: /Cast Magic Missile/i }).click();
 
     const dialog = page.getByRole("dialog");
