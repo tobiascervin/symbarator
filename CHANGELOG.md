@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-05-05
+
+The app is now phone-readable. Every primary surface (Home, the 7-step Wizard, the Character Sheet) and every modal (level-up, inventory, feat-tap, weapon-attack, spell-cast, ability-editor) renders without horizontal overflow at 360 px. Touch tap-targets meet 44 × 44 px. Live combat panels now sit above static reference content on phones; the desktop two-column layout is preserved at `≥ md`.
+
+### Added
+
+- **Mobile viewport metadata** in `app/layout.tsx` — `width=device-width`, `initialScale=1`, `viewportFit=cover`, plus a `themeColor=#efe5cb` matching the parchment cream so iOS Safari's tinted address bar aligns with the page background. `userScalable` is intentionally NOT set; pinch-to-zoom remains an accessibility lifeline.
+- **`mobileVariant="bottom-sheet"`** on the shared Dialog primitive. At `< sm` modals anchor to the bottom edge, occupy full width, render with rounded top corners only, slide in from below, and respect `100dvh` (so mobile-browser chrome doesn't clip content). At `≥ sm` the existing centered behavior is preserved unchanged. All 6 modals adopted the variant — level-up, inventory, feat-tap, weapon-attack, spell-cast, and the ability-score editor.
+- **`tap-target` utility** in `app/globals.css` inside `@media (pointer: coarse)`: `min-width: 2.75rem; min-height: 2.75rem` (44 px @ 16 px root). Applied to Corruption +/- buttons, HP/death-saves toggles, the rucksack inventory icon, the abilities pencil, and the Level Up trigger. Cursor viewports (`pointer: fine`) keep their existing dense sizing.
+- **`e2e/mobile.spec.ts`** with 5 mobile-viewport tests at 360×800 (home / wizard step 1 / sheet HP-above-Abilities / level-up dialog bottom-anchor) plus a desktop counter-check at 1280×800 asserting the two-column grid activates and Combat sits to the right of HP. Suite total: **129/129** (was 124 at v1.18.0). Lint baseline unchanged.
+
+### Changed
+
+- **Character sheet primary grid** flips visual order on phones via `flex flex-col-reverse gap-6 md:grid md:grid-cols-3`. Live combat panels (Combat / Corruption / Rest / Saves) now sit above the static reference content (Abilities / Skills / Features) on phones, so phone players see HP and threshold without scrolling. DOM order is preserved (static reference first), so screen-reader linear traversal still hits Abilities before Combat — WCAG 2.4.3 trade-off documented inline.
+- **Sheet header** wraps cleanly at narrow widths via `flex-wrap items-center justify-between gap-y-3 gap-x-4`. Share / Export JSON / Print / Level Up reflow onto the next line at 360 px instead of forcing horizontal overflow.
+- **Header display title** (`BlackletterTitle` level-1) uses `clamp(2rem, 6vw + 0.5rem, 3.5rem)` for fluid scaling between phone (~2rem) and desktop (~3.5rem ≈ prior `text-6xl`). No JS resize listener; desktop visuals at ~1024 px+ unchanged.
+- **Wizard bottom navigation** stacks vertically below `sm` (`flex flex-col-reverse gap-2 ... sm:flex-row sm:items-center sm:justify-between`) with both buttons full-width and Continue rendered visually above Back so the primary action sits closest to the thumb. Continue allows `whitespace-normal h-auto py-2` so the dynamic next-step label can wrap without overflowing the button.
+- **Wizard card-grid breakpoints standardized.** `class-step.tsx`, `background-step.tsx`, and `approach-step.tsx` migrated `md:grid-cols-2` → `sm:grid-cols-2` so the two-column band begins at the same breakpoint across the wizard. `skills-equipment-step.tsx` keeps its tighter `sm:grid-cols-2 md:grid-cols-3` (skills are short labels and benefit from a denser tablet grid) with an inline comment citing the decision.
+- **Home page per-character row** stacks `flex-col` on phone with the action buttons row picking up `flex-wrap`, so name + Edit / Export / Delete don't fight for ~300 px of content width at 360 px.
+- **Level-up dialog inner scroller** switched `max-h-[60vh]` → `max-h-[60dvh]` so mobile-browser chrome (URL bar) doesn't clip content.
+
+[1.19.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.19.0
+
 ## [1.18.0] - 2026-05-05
 
 The character sheet's global "Edit" link is gone. Common ability-score adjustments — the only edits the global link was actually safe for at L1 and unsafe for at L≥2 — now happen in-place via a pencil icon on the Abilities panel header (L1 only), opening a dialog that hosts every input contributing to the final ability scores. Above L1 the trigger does not render; the wizard URL still resolves for power-users who type it manually.
