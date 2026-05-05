@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-05-05
+
+The character sheet's global "Edit" link is gone. Common ability-score adjustments — the only edits the global link was actually safe for at L1 and unsafe for at L≥2 — now happen in-place via a pencil icon on the Abilities panel header (L1 only), opening a dialog that hosts every input contributing to the final ability scores. Above L1 the trigger does not render; the wizard URL still resolves for power-users who type it manually.
+
+### Added
+
+- **In-place ability-score editor at L1.** A pencil icon in the Abilities panel's section header opens a modal with the same input methods as the wizard's Abilities step (Standard Array / Point Buy / Manual), plus every modifier source that contributes to `computeFinalAbilities`: origin floating ASI (with the origin's `from:` whitelist enforced), choice-boon ability picks, and choose-one / choose-two burden ability picks. A read-only summary lists the origin's fixed and sub-choice ASI contributors. A live Final Ability Scores card updates as any input changes, sourced directly from `computeFinalAbilities(draft)` so there's no second source of truth.
+- **`validateAbilityEdit(c)`** in `lib/character/validation.ts` composes the wizard's per-step validators (origin floating ASI total + `from:` enforcement, boons-burdens choice picks) plus two defensive checks the wizard's UI handles implicitly (point-buy budget exact at 27, standard-array permutation complete). Returns `{ ok: true } | { ok: false; reason: string }`. The dialog's Save button is disabled while the result is `ok: false` and surfaces the reason inline.
+- **Six shared picker components** under `components/builder/pickers/` — `StandardArrayPicker`, `PointBuyPicker`, `ManualPicker`, `FloatingAsiPicker`, `BoonAbilityChoicePicker`, `BurdenAbilityChoicePicker`. The wizard's L1 steps now consume these directly, so wizard and editor behavior cannot drift. `FloatingAsiPicker` carries an opt-in `compact` prop the dialog passes to lay out its 6 ability cells as 2 rows × 3 cells inside the narrower modal width.
+- **`e2e/ability-score-editor.spec.ts`** with 8 new tests: no global Edit link, pencil presence at L1, manual-mode persistence, Human floating ASI re-allocation, Blood Ties choice-boon switch, point-buy over-budget Save gate, Cancel discards the draft, L≥2 has no pencil. Suite total: **124/124** (was 116 at v1.17.0). Lint baseline unchanged.
+
+### Changed
+
+- **Removed the global "Edit" link** from the character-sheet header. Share, Export JSON, Print, and Level Up are untouched. The wizard route at `/builder/<step>?id=<characterId>` is intentionally NOT locked — the URL still resolves for power-users with bookmarks. Common ability-score edits now happen in-place via the pencil icon (L1 only); other post-creation edits remain available via JSON import/export or the wizard URL.
+- **Dialog reset semantics use a parent-side `key` prop** rather than a `useEffect` + `setState`. The parent flips `key={open ? "open" : "closed"}` so the dialog remounts on each open; the lazy `useState(() => snapshot(character))` initializer re-seeds the draft from the persisted character. Avoids React 19's setState-in-effect lint warning while preserving the "Cancel discards" semantics.
+
+[1.18.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.18.0
+
 ## [1.17.0] - 2026-05-05
 
 The spell cast popover stops showing stats the player would never roll for the spell open in front of them. The catalog already structured this via `effect.kind`; the popover just didn't gate on it. As a small but related correctness fix, save spells now label their DC with the spell's save ability instead of the caster's spellcasting ability — so a Wizard Mystic's Sacred Flame popover reads `DC 12 (DEX)`, not `DC 12 (INT)`.
