@@ -72,14 +72,60 @@ test.describe("Spell cast popover (companion mode)", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Fire Bolt")).toBeVisible();
-    // Computed numbers band — Spell Mod +2 (INT), Attack +4, Save DC 12 (INT).
+    // Computed numbers band for an attack spell: Spell Mod + Attack only.
+    // Save DC must NOT appear (Fire Bolt is `kind: "attack"`).
     await expect(dialog.getByText(/\+2 \(INT\)/)).toBeVisible();
     // Attack mod appears twice (once in the Stat cell, once in the band footer).
     await expect(dialog.getByText(/\+4/).first()).toBeVisible();
-    await expect(dialog.getByText(/12 \(INT\)/)).toBeVisible();
+    await expect(dialog.getByText("Save DC", { exact: true })).toHaveCount(0);
     // Effect band — 1d10 fire at L1. Use `hasText` against the band's div
     // since the dice and type are separate text children.
     await expect(dialog.locator("div").filter({ hasText: /^1d10 fire$/ })).toBeVisible();
+  });
+
+  test("utility-spell popover shows only Spell Mod (no Attack, no Save DC)", async ({ page }) => {
+    const id = await seedCharacter(page, mysticWithSlots);
+    await gotoSheet(page, id);
+
+    await page.getByRole("button", { name: /Cast Mage Hand/i }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText(/\+2 \(INT\)/)).toBeVisible();
+    // Stat-cell labels are exact-match to avoid colliding with the
+    // EffectBand's utility copy ("no save, no attack — utility effect").
+    await expect(dialog.getByText("Attack", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByText("Save DC", { exact: true })).toHaveCount(0);
+  });
+
+  test("save-spell popover shows Spell Mod + Save DC with the spell's save ability", async ({ page }) => {
+    // Acid Splash is a Wizard-tradition save cantrip with Dex save — its
+    // popover must label the DC with (DEX), not the caster's INT.
+    const c: Character = {
+      ...mysticWithSlots,
+      id: "test-mystic-acid-splash",
+      spellPicks: {
+        cantrips: [
+          ...(mysticWithSlots.spellPicks?.cantrips ?? []),
+          "acid-splash",
+        ],
+        spellsKnown: mysticWithSlots.spellPicks?.spellsKnown ?? [],
+      },
+    };
+    const id = await seedCharacter(page, c);
+    await gotoSheet(page, id);
+
+    await page.getByRole("button", { name: /Cast Acid Splash/i }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    // Spell Mod cell uses the caster's INT.
+    await expect(dialog.getByText(/\+2 \(INT\)/)).toBeVisible();
+    // Save DC cell uses the spell's save ability — DEX, not INT.
+    await expect(dialog.getByText(/^12 \(DEX\)$/)).toBeVisible();
+    await expect(dialog.getByText(/12 \(INT\)/)).toHaveCount(0);
+    // No Attack cell on a save spell. (Acid Splash's description copy
+    // doesn't contain the word "attack", so a substring match would also
+    // work — exact: true keeps it consistent with the utility test.)
+    await expect(dialog.getByText("Attack", { exact: true })).toHaveCount(0);
   });
 
   test("leveled spell shows Cast at L1 button and spends a slot when clicked", async ({ page }) => {

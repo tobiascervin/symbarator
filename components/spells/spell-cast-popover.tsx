@@ -99,12 +99,27 @@ export function SpellCastPopover({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Computed-numbers band — always shown for spellcasters. */}
+        {/* Computed-numbers band — only shows mods relevant to the spell's
+            effect kind. Spell Mod is always visible (it's the parameter
+            behind every other stat). Attack appears only for attack spells;
+            Save DC only for save spells, with the spell's saveAbility. */}
         {ability && (
-          <div className="grid grid-cols-3 gap-2 rounded-md border border-border p-3 text-center">
+          <div
+            className={cn(
+              "grid gap-2 rounded-md border border-border p-3 text-center",
+              gridColsClass(visibleStatCount(resolved.kind)),
+            )}
+          >
             <Stat label="Spell Mod" value={`${signed(spellMod)} (${ABILITY_SHORT[ability]})`} />
-            <Stat label="Attack" value={signed(atkMod)} />
-            <Stat label="Save DC" value={`${dc} (${ABILITY_SHORT[ability]})`} />
+            {resolved.kind === "attack" && (
+              <Stat label="Attack" value={signed(atkMod)} />
+            )}
+            {resolved.kind === "save" && (
+              <Stat
+                label="Save DC"
+                value={`${dc}${resolved.saveAbility ? ` (${ABILITY_SHORT[resolved.saveAbility]})` : ""}`}
+              />
+            )}
           </div>
         )}
 
@@ -279,4 +294,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function signed(n: number): string {
   return n >= 0 ? `+${n}` : `${n}`;
+}
+
+function visibleStatCount(kind: ResolvedSpellEffect["kind"]): 1 | 2 {
+  // Spell Mod is always shown; Attack and Save DC are mode-gated. No mode
+  // shows both, so the band never has 3 cells.
+  return kind === "attack" || kind === "save" ? 2 : 1;
+}
+
+function gridColsClass(count: 1 | 2): string {
+  return count === 2 ? "grid-cols-2" : "grid-cols-1";
 }
