@@ -3,7 +3,7 @@
 import type { Character, WeaponDef, WeaponPropertyData } from "@/lib/character/types";
 import { ABILITY_SHORT } from "@/lib/character/types";
 import { resolveWeaponAttack } from "@/lib/character/equipment";
-import { Badge } from "@/components/ui/badge";
+import { ExplainableBadge } from "@/components/sheet/explainable-badge";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  WEAPON_DATA_EXPLANATIONS,
+  WEAPON_FLAG_EXPLANATIONS,
+  type PropertyExplanation,
+} from "@/data/property-explanations";
 
 const CATEGORY_LABEL: Record<WeaponDef["category"], string> = {
   "simple-melee": "Simple Melee",
@@ -59,17 +64,39 @@ export function WeaponAttackPopover({
   );
 
   // Property display — turn the boolean flag set + parameterized props
-  // into a readable comma-separated string.
-  const propertyLabels: string[] = [];
-  for (const f of weapon.flags) propertyLabels.push(f);
+  // into a list of badge entries, each carrying the visible label and the
+  // catalog explanation surfaced via ExplainableBadge tooltips.
+  const propertyEntries: Array<{ label: string; explanation: PropertyExplanation }> = [];
+  for (const f of weapon.flags) {
+    propertyEntries.push({ label: f, explanation: WEAPON_FLAG_EXPLANATIONS[f] });
+  }
   for (const p of weapon.properties ?? []) {
-    if (p.kind === "thrown") propertyLabels.push(`thrown (${p.range[0]}/${p.range[1]} ft)`);
-    else if (p.kind === "ammunition") propertyLabels.push(`ammunition (${p.range[0]}/${p.range[1]} ft)`);
-    else if (p.kind === "range") propertyLabels.push(`range (${p.range[0]}/${p.range[1]} ft)`);
-    else if (p.kind === "versatile")
-      propertyLabels.push(`versatile (${p.twoHandedDamage.count}d${p.twoHandedDamage.faces})`);
-    else if (p.kind === "area")
-      propertyLabels.push(`area (${p.size}-ft ${p.shape})`);
+    if (p.kind === "thrown") {
+      propertyEntries.push({
+        label: `thrown (${p.range[0]}/${p.range[1]} ft)`,
+        explanation: WEAPON_DATA_EXPLANATIONS.thrown,
+      });
+    } else if (p.kind === "ammunition") {
+      propertyEntries.push({
+        label: `ammunition (${p.range[0]}/${p.range[1]} ft)`,
+        explanation: WEAPON_DATA_EXPLANATIONS.ammunition,
+      });
+    } else if (p.kind === "range") {
+      propertyEntries.push({
+        label: `range (${p.range[0]}/${p.range[1]} ft)`,
+        explanation: WEAPON_DATA_EXPLANATIONS.range,
+      });
+    } else if (p.kind === "versatile") {
+      propertyEntries.push({
+        label: `versatile (${p.twoHandedDamage.count}d${p.twoHandedDamage.faces})`,
+        explanation: WEAPON_DATA_EXPLANATIONS.versatile,
+      });
+    } else if (p.kind === "area") {
+      propertyEntries.push({
+        label: `area (${p.size}-ft ${p.shape})`,
+        explanation: WEAPON_DATA_EXPLANATIONS.area,
+      });
+    }
   }
 
   return (
@@ -113,21 +140,19 @@ export function WeaponAttackPopover({
           )}
         </div>
 
-        {propertyLabels.length > 0 && (
-          <p className="text-xs text-muted-foreground leading-snug">
-            <span className="font-display tracking-widest text-[10px] uppercase mr-1">
+        {propertyEntries.length > 0 && (
+          <div className="text-xs text-muted-foreground leading-snug flex flex-wrap items-center gap-1">
+            <span className="font-display tracking-widest text-[10px] uppercase">
               Properties
             </span>
-            {propertyLabels.map((p, i) => (
-              <Badge
-                key={`${p}-${i}`}
-                variant="secondary"
-                className="mr-1 text-[10px] tracking-wider uppercase"
-              >
-                {p}
-              </Badge>
+            {propertyEntries.map((p, i) => (
+              <ExplainableBadge
+                key={`${p.label}-${i}`}
+                label={p.label}
+                explanation={p.explanation}
+              />
             ))}
-          </p>
+          </div>
         )}
 
         {weapon.description && (

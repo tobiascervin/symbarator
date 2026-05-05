@@ -37,6 +37,7 @@ import {
   formatMod,
 } from "@/lib/character/compute";
 import { resolveCharacterInventory, resolveWeaponAttack } from "@/lib/character/equipment";
+import { ArmorDetailsPopover } from "@/components/sheet/armor-details-popover";
 import { OrnateDivider } from "@/components/theme/ornate-divider";
 import { Parchment } from "@/components/theme/parchment";
 import { BlackletterTitle } from "@/components/theme/blackletter-title";
@@ -665,26 +666,55 @@ function SheetArmor({
   armor: ReadonlyArray<import("@/lib/character/types").ArmorDef>;
   shield: import("@/lib/character/types").ArmorDef | null;
 }) {
+  const [tappedArmor, setTappedArmor] = useState<
+    import("@/lib/character/types").ArmorDef | null
+  >(null);
+
   return (
-    <ul className="space-y-1 text-sm text-[#1d1814]">
-      {armor.map((a) => (
-        <li key={a.id} className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
-          <span>{a.name}</span>
-          <span className="font-display text-xs text-[#5a4d2f]">
-            AC {a.ac.base}
-            {a.ac.addDex
-              ? ` + Dex${a.ac.dexMax !== undefined ? ` (max +${a.ac.dexMax})` : ""}`
-              : ""}
-          </span>
-        </li>
-      ))}
-      {shield && (
-        <li className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
-          <span>{shield.name}</span>
-          <span className="font-display text-xs text-[#5a4d2f]">+{shield.ac.base} AC</span>
-        </li>
-      )}
-    </ul>
+    <>
+      <ul className="space-y-1 text-sm text-[#1d1814]">
+        {armor.map((a) => (
+          <li key={a.id}>
+            <button
+              type="button"
+              aria-label={`Inspect ${a.name}`}
+              onClick={() => setTappedArmor(a)}
+              className="w-full flex items-baseline justify-between gap-3 border-b border-[#9a8a6b]/30 py-1 px-1 -mx-1 rounded-sm text-left transition-colors hover:bg-[#7a1f1f]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]/40"
+            >
+              <span>{a.name}</span>
+              <span className="font-display text-xs text-[#5a4d2f]">
+                AC {a.ac.base}
+                {a.ac.addDex
+                  ? ` + Dex${a.ac.dexMax !== undefined ? ` (max +${a.ac.dexMax})` : ""}`
+                  : ""}
+              </span>
+            </button>
+          </li>
+        ))}
+        {shield && (
+          <li>
+            <button
+              type="button"
+              aria-label={`Inspect ${shield.name}`}
+              onClick={() => setTappedArmor(shield)}
+              className="w-full flex items-baseline justify-between gap-3 border-b border-[#9a8a6b]/30 py-1 px-1 -mx-1 rounded-sm text-left transition-colors hover:bg-[#7a1f1f]/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]/40"
+            >
+              <span>{shield.name}</span>
+              <span className="font-display text-xs text-[#5a4d2f]">
+                +{shield.ac.base} AC
+              </span>
+            </button>
+          </li>
+        )}
+      </ul>
+      <ArmorDetailsPopover
+        open={tappedArmor !== null}
+        onOpenChange={(o) => {
+          if (!o) setTappedArmor(null);
+        }}
+        armor={tappedArmor}
+      />
+    </>
   );
 }
 
