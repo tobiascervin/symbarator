@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0] - 2026-05-05
+
+The spell cast popover stops showing stats the player would never roll for the spell open in front of them. The catalog already structured this via `effect.kind`; the popover just didn't gate on it. As a small but related correctness fix, save spells now label their DC with the spell's save ability instead of the caster's spellcasting ability — so a Wizard Mystic's Sacred Flame popover reads `DC 12 (DEX)`, not `DC 12 (INT)`.
+
+### Added
+
+- **Mode-gated computed-numbers band on `<SpellCastPopover>`.** The band now picks visible stats by `effect.kind`: attack spells show Spell Mod + Attack; save spells show Spell Mod + Save DC; heal, utility, and description-only spells show Spell Mod alone. Spell Mod stays visible whenever the character has a spellcasting ability — it's the parameter behind every other stat (Attack = prof + spellMod, DC = 8 + prof + spellMod) and a useful reference even when the popover doesn't model the attack itself. The 3-cell case is unreachable now (no kind shows both Attack and Save DC), so the grid adapts to 1 or 2 columns and cells stay readable instead of stretching.
+- **Two new E2E tests** in `e2e/spell-cast.spec.ts`:
+    - `utility-spell popover shows only Spell Mod (no Attack, no Save DC)` — opens Mage Hand on the seeded Mystic and asserts the band's contents. Exact-match locators are required because the EffectBand's utility prose reads "no save, no attack — utility effect".
+    - `save-spell popover shows Spell Mod + Save DC with the spell's save ability` — seeds Acid Splash (Wizard tradition, Dex save) on a Mystic and asserts the DC cell label is `12 (DEX)` not `12 (INT)`, plus the absence of the Attack cell.
+- Suite total: **116/116** (was 114 at v1.16.0).
+
+### Changed
+
+- **Save DC label uses the spell's save ability, not the caster's spellcasting ability.** Sacred Flame's save is Dex regardless of whether the caster's spellcasting ability is Int (Wizard), Wis (Templar), or Cha (Sorcerer). Previously the popover always wrote the caster's ability into the DC label, which produced technically-wrong copy like `DC 12 (INT)` on a Wizard Sacred Flame. Save DC labels now read `(DEX)`, `(CON)`, etc. per `resolveSpellEffect(spell, c, castAt).saveAbility`. The numeric value is unchanged.
+- **Existing Fire Bolt assertion** in the spell-cast E2E suite dropped its `12 (INT)` Save DC check (Fire Bolt is `kind: "attack"`; the cell no longer renders) and added a `Save DC` absence check.
+
+[1.17.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.17.0
+
 ## [1.16.0] - 2026-05-04
 
 The level-up dialog's ASI/Feat picker becomes a sectioned card grid mirroring the L1 boons step's visual, and origin and class feats from PG p. 153–157 are now selectable. Players see every available feat's bonus, prerequisite, and full description without picking it first; class feats with unmet prerequisites surface as disabled cards with a one-line reason. Changeling characters now take Change Self through the same picker — the legacy third radio is gone.
