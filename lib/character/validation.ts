@@ -2,11 +2,17 @@
 // error message to display.
 
 import type { Character } from "./types";
+import { ABILITY_ORDER } from "./types";
 import { ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import { CLASS_BY_ID } from "@/data/classes";
 import { BOON_BY_ID, BURDEN_BY_ID } from "@/data/feats";
 import { WEAPON_BY_NAME } from "@/data/equipment";
+import {
+  POINT_BUY_BUDGET,
+  POINT_BUY_COSTS,
+  STANDARD_ARRAY,
+} from "./defaults";
 import {
   categoryMatchesPlaceholder,
   parseOptionPlaceholders,
@@ -252,4 +258,60 @@ export function highestCompletedStep(c: Character): Step {
     last = step;
   }
   return last;
+}
+
+/**
+ * Sheet-side validator composed from the wizard's per-step rules. Used by
+ * the L1 ability-score editor dialog to gate Save with the same checks the
+ * wizard enforces, plus two defensive method-budget checks the wizard's UI
+ * handles implicitly:
+ *
+ *   1. `validateStep("origin", c)` — floating ASI total + `from:` enforcement.
+ *   2. Point-buy budget MUST equal 27 when `c.abilityMethod === "point-buy"`.
+ *   3. Standard-array permutation MUST be complete when
+ *      `c.abilityMethod === "standard-array"`.
+ *   4. `validateStep("boons-burdens", c)` — choice-boon / choose-one /
+ *      choose-two pick presence + restriction enforcement.
+ *
+ * Returns `{ ok: true }` or `{ ok: false; reason: <user-facing string> }`,
+ * shaped to match the dialog's "disabled-with-reason" Save button.
+ */
+export function validateAbilityEdit(
+  c: Character,
+): { ok: true } | { ok: false; reason: string } {
+  // 1. Origin (floating ASI total + `from:` enforcement)
+  const originErr = validateStep("origin", c);
+  if (originErr) return { ok: false, reason: originErr };
+
+  // 2. Point-buy budget
+  if (c.abilityMethod === "point-buy") {
+    const cost = ABILITY_ORDER.reduce(
+      (acc, ab) => acc + (POINT_BUY_COSTS[c.abilities[ab]] ?? 0),
+      0,
+    );
+    if (cost !== POINT_BUY_BUDGET) {
+      return {
+        ok: false,
+        reason: `Point-buy budget must be exactly ${POINT_BUY_BUDGET} (currently ${cost}).`,
+      };
+    }
+  }
+
+  // 3. Standard-array permutation
+  if (c.abilityMethod === "standard-array") {
+    const got = ABILITY_ORDER.map((a) => c.abilities[a]).sort().join(",");
+    const expected = [...STANDARD_ARRAY].sort().join(",");
+    if (got !== expected) {
+      return {
+        ok: false,
+        reason: `Standard array must use each of ${STANDARD_ARRAY.join(", ")} exactly once.`,
+      };
+    }
+  }
+
+  // 4. Boons & burdens (choice-boon / choose-one / choose-two pick presence)
+  const boonsErr = validateStep("boons-burdens", c);
+  if (boonsErr) return { ok: false, reason: boonsErr };
+
+  return { ok: true };
 }

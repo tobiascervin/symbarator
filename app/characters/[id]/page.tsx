@@ -132,12 +132,6 @@ export default function CharacterPage({
               >
                 Level Up
               </Button>
-              <Link
-                href={`/builder/origin?id=${character.id}`}
-                className={buttonVariants({ size: "sm", variant: "ghost" })}
-              >
-                Edit
-              </Link>
             </div>
           )}
         </header>

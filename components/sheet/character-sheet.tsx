@@ -14,7 +14,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { Backpack, ChevronRight } from "lucide-react";
+import { Backpack, ChevronRight, Pencil } from "lucide-react";
+import { AbilityScoreEditorDialog } from "@/components/sheet/ability-score-editor-dialog";
 import {
   FeatTapPopover,
   type TappedEntry,
@@ -81,6 +82,7 @@ export function CharacterSheet({
   // Companion-mode tap state for the FeatTapPopover. Non-null = open.
   const [tapped, setTapped] = useState<TappedEntry | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [abilityEditorOpen, setAbilityEditorOpen] = useState(false);
   function openTap(feature: FeatureDef, source: FeatureSource, badges?: ReadonlyArray<FeatCardBadge>) {
     setTapped({ feature, source, badges });
   }
@@ -114,7 +116,24 @@ export function CharacterSheet({
 
           {/* Abilities */}
           <Parchment>
-            <SectionHeader>Abilities</SectionHeader>
+            <SectionHeader
+              action={
+                c.level === 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Edit ability scores"
+                    onClick={() => setAbilityEditorOpen(true)}
+                    className="text-[#3a322a] hover:bg-[#7a1f1f]/10 hover:text-[#1d1814]"
+                  >
+                    <Pencil className="size-4" />
+                  </Button>
+                ) : undefined
+              }
+            >
+              Abilities
+            </SectionHeader>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
               {ABILITY_ORDER.map((ab) => (
                 <div
@@ -539,6 +558,20 @@ export function CharacterSheet({
           onOpenChange={setInventoryOpen}
           character={c}
           onChange={handleChange}
+        />
+      )}
+
+      {/* L1-only ability-score editor — opened by the pencil icon in the
+          Abilities panel header. The `key` flip on each open forces a fresh
+          component instance so the draft re-seeds from the persisted
+          character, without needing a setState-in-effect. */}
+      {onChange && c.level === 1 && (
+        <AbilityScoreEditorDialog
+          key={abilityEditorOpen ? "open" : "closed"}
+          character={c}
+          open={abilityEditorOpen}
+          onOpenChange={setAbilityEditorOpen}
+          onSave={(updated) => handleChange(updated)}
         />
       )}
     </div>

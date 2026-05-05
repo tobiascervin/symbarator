@@ -1,7 +1,7 @@
 "use client";
 
 import type { Ability } from "@/lib/character/types";
-import { ABILITY_LABELS, ABILITY_ORDER, ABILITY_SHORT } from "@/lib/character/types";
+import { ABILITY_SHORT } from "@/lib/character/types";
 import { BOONS, BURDENS } from "@/data/feats";
 import {
   Card,
@@ -11,9 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FeatPickCard } from "@/components/feats/feat-pick-card";
+import { BurdenAbilityChoicePicker } from "./pickers/burden-ability-choice-picker";
 import type { DraftState } from "./use-draft";
 
 export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
@@ -62,34 +62,6 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
       d.burdens = [id];
       // Selecting a different burden clears any prior choice picks.
       d.burdenAbilityChoices = {};
-    });
-  }
-
-  function setBurdenChoiceOne(burdenId: string, ability: Ability) {
-    update((d) => {
-      d.burdenAbilityChoices = {
-        ...d.burdenAbilityChoices,
-        [burdenId]: [ability],
-      };
-    });
-  }
-
-  function toggleBurdenChoiceTwo(burdenId: string, ability: Ability) {
-    update((d) => {
-      const current = d.burdenAbilityChoices[burdenId] ?? [];
-      let next: ReadonlyArray<Ability>;
-      if (current.includes(ability)) {
-        next = current.filter((a) => a !== ability);
-      } else if (current.length < 2) {
-        next = [...current, ability];
-      } else {
-        // At max — replace the oldest pick with the new one.
-        next = [current[1], ability];
-      }
-      d.burdenAbilityChoices = {
-        ...d.burdenAbilityChoices,
-        [burdenId]: next,
-      };
     });
   }
 
@@ -177,58 +149,24 @@ export function BoonsBurdensStep({ draftHook }: { draftHook: DraftState }) {
                     </p>
                   </CardContent>
                 )}
-                {isSelected && b.abilityBonus?.kind === "choose-one" && (
-                  <CardContent className="pt-0">
-                    <p className="font-display tracking-wide text-xs uppercase text-muted-foreground mb-2">
-                      Pick the ability
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(b.abilityBonus.from ?? ABILITY_ORDER).map((ab) => {
-                        const active = picks[0] === ab;
-                        return (
-                          <Button
-                            key={ab}
-                            type="button"
-                            size="sm"
-                            variant={active ? "default" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setBurdenChoiceOne(b.id, ab);
-                            }}
-                          >
-                            {ABILITY_LABELS[ab]}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                )}
-                {isSelected && b.abilityBonus?.kind === "choose-two" && (
-                  <CardContent className="pt-0">
-                    <p className="font-display tracking-wide text-xs uppercase text-muted-foreground mb-2">
-                      Pick 2 abilities ({picks.length} of 2)
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(b.abilityBonus.from ?? ABILITY_ORDER).map((ab) => {
-                        const active = picks.includes(ab);
-                        return (
-                          <Button
-                            key={ab}
-                            type="button"
-                            size="sm"
-                            variant={active ? "default" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleBurdenChoiceTwo(b.id, ab);
-                            }}
-                          >
-                            {ABILITY_LABELS[ab]}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                )}
+                {isSelected &&
+                  (b.abilityBonus?.kind === "choose-one" ||
+                    b.abilityBonus?.kind === "choose-two") && (
+                    <CardContent className="pt-0">
+                      <BurdenAbilityChoicePicker
+                        burden={b}
+                        picks={picks}
+                        onChange={(next) =>
+                          update((d) => {
+                            d.burdenAbilityChoices = {
+                              ...d.burdenAbilityChoices,
+                              [b.id]: [...next],
+                            };
+                          })
+                        }
+                      />
+                    </CardContent>
+                  )}
               </Card>
             );
           })}

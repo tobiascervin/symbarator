@@ -3,11 +3,11 @@
 import { ORIGINS, ORIGIN_BY_ID } from "@/data/origins";
 import { BACKGROUND_BY_ID } from "@/data/backgrounds";
 import type { Ability } from "@/lib/character/types";
-import { ABILITY_LABELS, ABILITY_ORDER } from "@/lib/character/types";
+import { ABILITY_LABELS } from "@/lib/character/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FloatingAsiPicker } from "./pickers/floating-asi-picker";
 import type { DraftState } from "./use-draft";
 
 export function OriginStep({ draftHook }: { draftHook: DraftState }) {
@@ -15,14 +15,6 @@ export function OriginStep({ draftHook }: { draftHook: DraftState }) {
   if (!draft) return null;
 
   const selectedOrigin = ORIGIN_BY_ID[draft.originId];
-  const allocated = Object.values(draft.originAsiAllocation).reduce(
-    (a, b) => a + (b ?? 0),
-    0,
-  );
-  const target =
-    (selectedOrigin?.asi.floating?.count ?? 0) *
-    (selectedOrigin?.asi.floating?.size ?? 0);
-  const remaining = target - allocated;
 
   function selectOrigin(id: string) {
     update((d) => {
@@ -46,26 +38,6 @@ export function OriginStep({ draftHook }: { draftHook: DraftState }) {
       d.originSubchoiceId = subId;
     });
   }
-
-  function bumpAlloc(ability: Ability, delta: number) {
-    update((d) => {
-      const cur = d.originAsiAllocation[ability] ?? 0;
-      const next = cur + delta;
-      if (next < 0) return;
-      d.originAsiAllocation[ability] = next;
-    });
-  }
-
-  // Which abilities are eligible for the floating ASI bonuses?
-  const fixed = selectedOrigin?.asi.fixed ?? {};
-  const eligibleForFloating = (ab: Ability): boolean => {
-    if (!selectedOrigin) return false;
-    const f = selectedOrigin.asi.floating;
-    if (!f) return false;
-    if (f.rule === "any-other" && ab in fixed) return false;
-    if (f.from && !f.from.includes(ab)) return false;
-    return true;
-  };
 
   return (
     <div className="space-y-8">
@@ -206,77 +178,16 @@ export function OriginStep({ draftHook }: { draftHook: DraftState }) {
               </div>
             )}
 
-            {selectedOrigin.asi.floating && target > 0 && (
-              <div>
-                <p className="font-display tracking-wide text-base mb-2 text-foreground">
-                  Allocate floating ability bonuses
-                </p>
-                <p className="text-muted-foreground mb-3">
-                  Distribute{" "}
-                  <span className="text-primary font-semibold">{target}</span>{" "}
-                  point{target === 1 ? "" : "s"} across abilities.{" "}
-                  <span
-                    className={cn(
-                      "font-semibold",
-                      remaining === 0
-                        ? "text-emerald-400"
-                        : remaining > 0
-                          ? "text-yellow-400"
-                          : "text-destructive",
-                    )}
-                  >
-                    Remaining: {remaining}
-                  </span>
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {ABILITY_ORDER.map((ab) => {
-                    const eligible = eligibleForFloating(ab);
-                    const value = draft.originAsiAllocation[ab] ?? 0;
-                    const fixedAt = fixed[ab] ?? 0;
-                    // Cell value = origin's fixed contribution + player's
-                    // floating allocation. Buttons control only the
-                    // floating portion. For non-eligible cells with no
-                    // fixed bonus (e.g. Human INT/WIS), the cell stays at
-                    // +0 and is dimmed.
-                    const total = fixedAt + value;
-                    const dim = !eligible && fixedAt === 0;
-                    return (
-                      <div
-                        key={ab}
-                        className={cn(
-                          "rounded-md border p-2 text-center",
-                          dim && "opacity-40",
-                        )}
-                      >
-                        <div className="font-display text-xs uppercase tracking-widest text-muted-foreground">
-                          {ABILITY_LABELS[ab]}
-                        </div>
-                        <div className="text-2xl font-display py-1">+{total}</div>
-                        <div className="flex justify-center gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            disabled={!eligible || value === 0}
-                            onClick={() => bumpAlloc(ab, -1)}
-                          >
-                            −
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            disabled={!eligible || remaining === 0}
-                            onClick={() => bumpAlloc(ab, 1)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            {selectedOrigin.asi.floating && (
+              <FloatingAsiPicker
+                origin={selectedOrigin}
+                allocation={draft.originAsiAllocation}
+                onChange={(next) =>
+                  update((d) => {
+                    d.originAsiAllocation = { ...next };
+                  })
+                }
+              />
             )}
           </CardContent>
         </Card>
