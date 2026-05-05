@@ -270,3 +270,16 @@
   border-radius: 3px;
   font-size: 0.9em;
 }
+
+/* Tap-target floor for touch viewports. Apply `tap-target` to any
+   interactive control that would otherwise fall below the 44×44 CSS-pixel
+   WCAG 2.5.5 minimum (HP/Corruption +/- buttons, death-saves toggles,
+   the rucksack inventory icon, etc). On `pointer: fine` viewports
+   (cursor-driven desktops) the rule does not apply, so dense toolbars stay
+   compact. */
+@media (pointer: coarse) {
+  .tap-target {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+}

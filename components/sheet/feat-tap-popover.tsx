@@ -77,7 +77,7 @@ export function FeatTapPopover({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" mobileVariant="bottom-sheet">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">{feature.name}</DialogTitle>
           <DialogDescription>{sourceLabel}</DialogDescription>

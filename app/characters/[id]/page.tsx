@@ -89,7 +89,7 @@ export default function CharacterPage({
   return (
     <main className="min-h-full w-full px-4 py-8 md:py-12">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-6 flex items-center justify-between">
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-y-3 gap-x-4">
           <div className="flex items-center gap-4">
             <Link
               href="/"
@@ -105,7 +105,7 @@ export default function CharacterPage({
             </Link>
           </div>
           {character && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={handleShare}>
                 Share
               </Button>
@@ -124,6 +124,7 @@ export default function CharacterPage({
                 size="sm"
                 onClick={() => setLevelUpOpen(true)}
                 disabled={character.level >= MAX_CHARACTER_LEVEL}
+                className="tap-target"
                 title={
                   character.level >= MAX_CHARACTER_LEVEL
                     ? "Already at maximum level"

@@ -113,7 +113,7 @@ export function InventoryModal({ open, onOpenChange, character, onChange }: Inve
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" mobileVariant="bottom-sheet">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Manage Inventory</DialogTitle>
           <DialogDescription>

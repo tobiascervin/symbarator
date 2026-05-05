@@ -99,6 +99,10 @@ export function SkillsEquipmentStep({ draftHook }: { draftHook: DraftState }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Skills are short labels (single words) that benefit from being
+              denser than the wizard's other card grids — sm:cols-2 then
+              md:cols-3 is intentional, NOT migrated to sm:cols-2 only.
+              See responsive-mobile-layout (2026-05-05) tasks 6.4. */}
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
             {cls.proficiencies.skillChoices.from.map((sId) => {
               const skill = SKILL_BY_ID[sId];

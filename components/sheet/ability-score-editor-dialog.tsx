@@ -145,7 +145,10 @@ export function AbilityScoreEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+        mobileVariant="bottom-sheet"
+      >
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Edit Ability Scores

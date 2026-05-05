@@ -87,7 +87,7 @@ export function ApproachStep({ draftHook }: { draftHook: DraftState }) {
         Pick your approach — the specific shape your training takes inside the {cls.name.toLowerCase()} class.
       </p>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {cls.approaches.map((a) => {
           const isSelected = draft.approachId === a.id;
           return (

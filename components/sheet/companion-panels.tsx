@@ -44,7 +44,7 @@ function SymButton({
   variant?: "primary" | "secondary";
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const base =
-    "inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-display tracking-wide whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]";
+    "tap-target inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-display tracking-wide whitespace-nowrap transition disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7a1f1f]";
   const styles =
     variant === "primary"
       ? "bg-[#7a1f1f] text-[#f3ead2] hover:bg-[#5a1717] border border-[#5a1717]"
@@ -455,7 +455,7 @@ function CorruptionRow({
   onPlus(): void;
 }) {
   const stepBtn =
-    "w-7 h-7 inline-flex items-center justify-center rounded border border-[#9a8a6b] bg-[#efe5cb] text-[#1d1814] font-display text-base hover:bg-[#7a1f1f] hover:text-[#f3ead2] hover:border-[#7a1f1f] transition";
+    "tap-target w-7 h-7 inline-flex items-center justify-center rounded border border-[#9a8a6b] bg-[#efe5cb] text-[#1d1814] font-display text-base hover:bg-[#7a1f1f] hover:text-[#f3ead2] hover:border-[#7a1f1f] transition";
   return (
     <div className="flex items-baseline justify-between border-b border-[#9a8a6b]/30 py-0.5">
       <dt className="text-[#3a322a]">{label}</dt>

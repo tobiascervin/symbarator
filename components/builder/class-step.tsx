@@ -68,7 +68,7 @@ export function ClassStep({ draftHook }: { draftHook: DraftState }) {
         Symbaroum offers five.
       </p>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {CLASSES.map((c) => {
           const isSelected = draft.classId === c.id;
           return (

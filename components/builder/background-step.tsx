@@ -59,7 +59,7 @@ export function BackgroundStep({ draftHook }: { draftHook: DraftState }) {
         Your background is your sub-origin — the specific story behind why you walked away.
       </p>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {options.map((bg) => {
           const isSelected = draft.backgroundId === bg.id;
           return (

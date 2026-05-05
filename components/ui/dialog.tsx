@@ -43,17 +43,46 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  mobileVariant = "centered",
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  /**
+   * Layout variant at viewports below the `sm` breakpoint (640px).
+   * - `"centered"` (default): existing centered-dialog behavior at all widths.
+   * - `"bottom-sheet"`: anchored to the bottom edge of the viewport at `< sm`,
+   *   full width, rounded only on top corners, slide-up animation, max-height
+   *   `100dvh` so it respects mobile browser chrome. At `≥ sm` the centered
+   *   classes apply unchanged.
+   */
+  mobileVariant?: "centered" | "bottom-sheet"
 }) {
+  // The bottom-sheet variant needs to swap most positioning classes (not
+  // override them), because Tailwind v4 orders CSS by class name, not by
+  // the order the classes appear in the className string. So a `max-sm:`
+  // override of `-translate-x-1/2` would lose if the centered class is
+  // emitted later in the stylesheet. Picking entirely different class
+  // strings inside vs outside the `< sm` band sidesteps the cascade
+  // entirely.
+  const sharedClasses =
+    "fixed z-50 grid w-full gap-4 bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0";
+  const centeredClasses =
+    "top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[calc(100%-2rem)] sm:max-w-sm rounded-xl data-open:zoom-in-95 data-closed:zoom-out-95";
+  // Below sm: anchor to the bottom edge; rounded only on top corners; no
+  // translate; max-h-100dvh so mobile-browser chrome doesn't clip content.
+  // At sm and above, the centered classes apply unchanged via `sm:` prefix.
+  const bottomSheetMobileClasses =
+    "max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:right-0 max-sm:!translate-x-0 max-sm:!translate-y-0 max-sm:max-w-none max-sm:max-h-[100dvh] max-sm:rounded-b-none max-sm:rounded-t-xl max-sm:data-open:slide-in-from-bottom max-sm:data-closed:slide-out-to-bottom sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm sm:rounded-xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95";
+
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
+        data-mobile-variant={mobileVariant}
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          sharedClasses,
+          mobileVariant === "bottom-sheet" ? bottomSheetMobileClasses : centeredClasses,
           className
         )}
         {...props}

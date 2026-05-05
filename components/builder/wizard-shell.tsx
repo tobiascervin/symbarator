@@ -124,11 +124,22 @@ export function WizardShell({
         {!loading && draft && <div key={draftKey}>{children(draftHook)}</div>}
 
         {!loading && draft && (
-          <div className="mt-10 flex items-center justify-between gap-2 border-t border-border pt-6">
-            <Button variant="ghost" onClick={handleBack}>
+          // On phones (<sm) the nav stacks via flex-col-reverse so Continue
+          // sits visually on top — primary action under the thumb — and
+          // both buttons go full-width. At sm+ we get the prior horizontal
+          // row with Back left, Continue right at natural widths.
+          <div className="mt-10 flex flex-col-reverse gap-2 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <Button
+              variant="ghost"
+              onClick={handleBack}
+              className="w-full sm:w-auto"
+            >
               ← Back
             </Button>
-            <Button onClick={handleAdvance} className="font-display tracking-wider">
+            <Button
+              onClick={handleAdvance}
+              className="font-display tracking-wider w-full sm:w-auto whitespace-normal h-auto py-2"
+            >
               {nextStep(step, draft)
                 ? `Continue → ${STEP_LABELS[nextStep(step, draft) as Step]}`
                 : "Finish"}

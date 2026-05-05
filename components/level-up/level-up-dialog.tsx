@@ -82,7 +82,7 @@ export function LevelUpDialog({ open, onOpenChange, character, onApplied }: Leve
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-2xl" mobileVariant="bottom-sheet">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Level Up — L{character.level} → L{target}
@@ -92,7 +92,12 @@ export function LevelUpDialog({ open, onOpenChange, character, onApplied }: Leve
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto space-y-6 pr-1">
+        {/* `60dvh` (dynamic-viewport-height) instead of `60vh` keeps the
+            inner scroller honest on mobile browsers where chrome
+            (URL bar) eats some of `vh`. Below sm we use the bottom-sheet
+            variant which already maxes at 100dvh, so this is a small
+            extra margin for content readability on phones. */}
+        <div className="max-h-[60dvh] overflow-y-auto space-y-6 pr-1">
           <HpStep character={character} hp={hp} onChange={setHp} />
           <OrnateDivider />
           {choices.map((choice, i) => {

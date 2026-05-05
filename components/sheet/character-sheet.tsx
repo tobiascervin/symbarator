@@ -108,7 +108,15 @@ export function CharacterSheet({
         <OrnateDivider className="!text-[#7a1f1f]" />
       </Parchment>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      {/* Top-level layout: at md+ this is a 2-column grid with the static
+          reference content (Abilities/Skills/Features) dominating the left
+          and the live combat panels (Combat/Corruption/Rest/Saves) in the
+          right column. On phones we flip the visual order via
+          `flex-col-reverse` so live panels appear above static content
+          without scrolling — DOM order is preserved (static first), so
+          screen-reader linear traversal still hits Abilities before
+          Combat. WCAG 2.4.3 accepts this presentational reorder. */}
+      <div className="flex flex-col-reverse gap-6 md:grid md:grid-cols-3">
         <div className="space-y-6 md:col-span-2">
           {/* Companion-mode: HP & Vitals + conditional Death Saves */}
           <HpVitalsPanel character={c} onChange={handleChange} />
@@ -125,7 +133,7 @@ export function CharacterSheet({
                     size="icon"
                     aria-label="Edit ability scores"
                     onClick={() => setAbilityEditorOpen(true)}
-                    className="text-[#3a322a] hover:bg-[#7a1f1f]/10 hover:text-[#1d1814]"
+                    className="tap-target text-[#3a322a] hover:bg-[#7a1f1f]/10 hover:text-[#1d1814]"
                   >
                     <Pencil className="size-4" />
                   </Button>
@@ -586,7 +594,7 @@ function RucksackButton({ onClick }: { onClick(): void }) {
       size="sm"
       aria-label="Manage inventory"
       onClick={onClick}
-      className="border-[#9a8a6b] bg-[#f5ecd6] text-[#3a322a] hover:bg-[#e8d9b3] hover:text-[#1d1814]"
+      className="tap-target border-[#9a8a6b] bg-[#f5ecd6] text-[#3a322a] hover:bg-[#e8d9b3] hover:text-[#1d1814]"
     >
       <Backpack className="size-3.5" />
       Inventory

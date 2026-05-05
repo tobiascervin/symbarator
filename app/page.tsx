@@ -112,7 +112,10 @@ export default function HomePage() {
           <div className="grid gap-3 mb-8">
             {characters.map((c) => (
               <Card key={c.id} className="hover:border-ring/60 transition-colors">
-                <div className="flex items-center justify-between gap-4 px-6 py-4">
+                {/* Stack name+meta over the action buttons on phone (<sm)
+                    so three ghost buttons + a long name don't fight over
+                    ~300px of content width. */}
+                <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-4">
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/characters/${c.id}`}
@@ -124,7 +127,7 @@ export default function HomePage() {
                       Level {c.level} · {originLabel(c.originId)} · {classLabel(c.classId)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex flex-wrap items-center gap-1 sm:shrink-0 sm:flex-nowrap">
                     <Link
                       href={`/builder/origin?id=${c.id}`}
                       className={buttonVariants({ variant: "ghost", size: "sm" })}
