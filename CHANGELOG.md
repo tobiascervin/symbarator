@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html).
 
+## [1.20.0] - 2026-05-06
+
+Every weapon and armor property tag on the sheet is now self-explaining. Hovering a property badge on desktop — or tapping it on phone — opens a small tooltip with the Player's Guide definition, the property name as a header, and a `PG p. <n>` reference so the source is auditable. New players don't have to leave the app to find out what *deep impact* or *ensnaring* or *weighty (13)* mean. Armor rows in the Combat panel become tap-targets like the weapon cards already are, opening a new `ArmorDetailsPopover` so the AC formula, weight, and tooltip-bearing property badges live behind one consistent affordance.
+
+### Added
+
+- **`data/property-explanations.ts` catalog.** Three records (`WEAPON_FLAG_EXPLANATIONS`, `WEAPON_DATA_EXPLANATIONS`, `ARMOR_FLAG_EXPLANATIONS`) plus a standalone `WEIGHTY_EXPLANATION` constant cover all 16 boolean weapon properties (PG p. 167–168), all 5 parameterized weapon-property kinds, and all 3 armor properties (PG p. 171). Each entry carries a display `name`, the source `pgPage`, and the canonical PG description. The records are typed `Record<WeaponProperty, …>` / `Record<WeaponPropertyData["kind"], …>` / `Record<ArmorProperty, …>` over the existing union types, so a future property added to the type system without a tooltip explanation fails to compile.
+- **`<ExplainableBadge>` component** (`components/sheet/explainable-badge.tsx`). Renders visually identical to a `<Badge variant="secondary">` and layers a controlled-`open` Tooltip on top: hover-or-focus on desktop, tap-to-toggle on phone. `closeOnClick={false}` keeps the controlled state authoritative; `e.stopPropagation()` in the click handler keeps a tap inside a Dialog from bubbling to overlay-dismiss. `role="button"`, `tabIndex={0}`, Enter / Space toggle the tooltip, and the `tap-target` utility meets the 44 × 44 CSS-pixel floor on touch viewports. The tooltip body shows three lines: name (uppercase display heading), description (PG body), and `PG p. <n>` (small uppercase muted footer).
+- **`<ArmorDetailsPopover>`** (`components/sheet/armor-details-popover.tsx`). Read-only Dialog mirroring `WeaponAttackPopover`'s shape — title, category (Light / Medium / Heavy / Shield), AC formula + weight band, optional description, and a property row of `ExplainableBadge`s for body armor (`flags` + optional `weighty (N)`). Renders as a centered modal at desktop and a bottom-sheet on phone via the existing `mobileVariant="bottom-sheet"`.
+- **`e2e/property-tooltips.spec.ts`** with 5 tests: dagger popover renders all three property badges + finesse hover tooltip body; mobile-touch tap-toggle inside a Dialog with `hasTouch: true` (popover stays open throughout); Field Armor card opens the popover with `cumbersome` and `weighty (13)` badges and PG bodies on hover; full catalog completeness over every weapon and armor in `data/equipment.ts`; exact union-key coverage assertions on all three records. Suite total: **134/134** (was 129 at v1.19.0). Lint baseline unchanged.
+
+### Changed
+
+- **Weapon-attack popover property row** swaps the bare `<Badge>` list for a typed `propertyEntries: Array<{ label, explanation }>` rendered through `<ExplainableBadge>`. Boolean flags resolve via `WEAPON_FLAG_EXPLANATIONS`, parameterized properties (`thrown (20/60 ft)`, `versatile (1d10)`, etc.) keep their parameter readout in the badge label and resolve the kind's generic explanation via `WEAPON_DATA_EXPLANATIONS`. Iteration order is preserved (boolean flags first, then parameterized).
+- **Armor rows are now tap-targets** in the Combat panel's Armor subsection, mirroring the weapon-card affordance — each renders as a `<button>` with accessible name `Inspect <armor name>` that opens `<ArmorDetailsPopover>`. The shield row is also a tap-target so its AC contribution is inspectable, but the popover skips the property row for shields per PG p. 171 (property tags are body-armor only). One mental model — tap any combat item to inspect — covers weapons and armor.
+
+[1.20.0]: https://github.com/tobiascervin/symbarator/releases/tag/v1.20.0
+
 ## [1.19.0] - 2026-05-05
 
 The app is now phone-readable. Every primary surface (Home, the 7-step Wizard, the Character Sheet) and every modal (level-up, inventory, feat-tap, weapon-attack, spell-cast, ability-editor) renders without horizontal overflow at 360 px. Touch tap-targets meet 44 × 44 px. Live combat panels now sit above static reference content on phones; the desktop two-column layout is preserved at `≥ md`.
